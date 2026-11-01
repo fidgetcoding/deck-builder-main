@@ -101,7 +101,7 @@ export const proposalTemplate: BrandConfig = {
   ],
   letterSignoff: "[Signoff: e.g. Thank you. I mean it.]",
 
-  workHeadline: "[Work headline: lorem ipsum dolor sit amet.]",
+  workHeadline: "[Pushed from my laptop, run four.]",
   workBlurb:
     "[Work blurb: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod incididunt ut labore et dolore magna. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut ex ea commodo consequat.]",
   workCaseFilmLabel: "[The case film:]",
