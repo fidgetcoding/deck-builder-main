@@ -36,7 +36,7 @@ export default function SlideHeader03() {
             </FadeIn>
             <FadeIn delay={200}>
               <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-5 leading-tight">
-                [Subheadline: sed do eiusmod.]
+                Pushed from my laptop, run one.
               </h3>
             </FadeIn>
             <FadeIn delay={280}>
