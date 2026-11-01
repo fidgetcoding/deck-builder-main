@@ -137,7 +137,7 @@ test.describe("a copy edit lands in place", () => {
     const deploy = await fakeDeployments(page);
     await page.goto("/deck-builder?view=deck#4");
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
-    await page.getByRole("button", { name: "Open menu" }).click();
+    await page.getByRole("button", { name: "Open menu" }).hover();
     await page.getByRole("button", { name: "Contact", exact: true }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();

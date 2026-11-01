@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // A deploy is the wait while someone's watching, and this is the one slow step I
+  // can cut. CI still runs the typecheck on every push.
+  typescript: { ignoreBuildErrors: !!process.env.VERCEL },
   // Next reloads a tab when a refresh comes back from a different build ID. Open
   // decks work out for themselves whether a new build needs that (DeckUpdateWatcher).
   generateBuildId: () => "deck",

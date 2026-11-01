@@ -21,9 +21,11 @@ type Props = {
 
 export default function TheDeckTemplate({ slides, onSlideChange, initialSlideIdx = 0, chromeVariant }: Props) {
   const total = slides.length;
-  const [current, setCurrent] = useState(() =>
+  const [requested, setCurrent] = useState(() =>
     Math.max(0, Math.min(slides.length - 1, initialSlideIdx)),
   );
+  // An update can remove the slide someone's on, so land on the new last one.
+  const current = Math.min(requested, total - 1);
 
   useEffect(() => {
     onSlideChange?.(current);
