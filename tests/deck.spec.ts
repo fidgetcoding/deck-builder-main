@@ -99,8 +99,13 @@ test.describe("pushing while someone's watching", () => {
     await page.goto("/deck-builder");
     await page.getByRole("button", { name: "Scroll view" }).click();
     await expect(page.locator("#letter")).toBeAttached();
-    await page.evaluate(() => window.scrollTo({ top: 1500, behavior: "instant" }));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(1500);
+    await expect.poll(() => deploy.polls).toBeGreaterThan(0);
+    // The toggle lands on the cover a frame later, so keep at it until it sticks.
+    await expect(async () => {
+      await page.evaluate(() => window.scrollTo({ top: 1500, behavior: "instant" }));
+      await page.evaluate(() => new Promise(requestAnimationFrame));
+      expect(await page.evaluate(() => window.scrollY)).toBe(1500);
+    }).toPass();
 
     deploy.version = "build-2";
     const reloaded = page.waitForEvent("load");
@@ -235,13 +240,16 @@ test.describe("deck view on small screens", () => {
       const slide = page.locator('[aria-hidden="false"] section');
       await expect(slide).toBeVisible();
       const cdp = await page.context().newCDPSession(page);
-      await cdp.send("Input.synthesizeScrollGesture", {
-        x: 195,
-        y: 500,
-        yDistance: -300,
-        gestureSourceType: "touch",
-      });
-      await expect.poll(() => slide.evaluate((el) => el.scrollTop)).toBeGreaterThan(100);
+      // A synthetic gesture can land before the compositor is ready, so give it a few goes.
+      await expect(async () => {
+        await cdp.send("Input.synthesizeScrollGesture", {
+          x: 195,
+          y: 500,
+          yDistance: -300,
+          gestureSourceType: "touch",
+        });
+        expect(await slide.evaluate((el) => el.scrollTop)).toBeGreaterThan(100);
+      }).toPass({ timeout: 10_000 });
       await expect(page.getByRole("button", { name: "Toggle slide tray" })).toHaveAttribute("aria-expanded", "false");
     });
   });
