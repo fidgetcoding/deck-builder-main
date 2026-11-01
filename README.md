@@ -42,7 +42,7 @@ The two views are written separately, so edit both:
 | Deck | `src/components/deck-template/slides/` |
 | Scroll | `src/components/proposal/brands.ts` |
 
-Each slide is one hand-written `.tsx` file, so a slide can look like whatever it needs to. To add, remove or reorder slides, edit `src/components/deck-template/slidesRegistry.tsx`. In the scroll view, any section you leave empty doesn't render. To drop the striped placeholder boxes, set `placeholderMode: false`.
+Each slide is its own `.tsx` file, not a template fill-in, so a slide can look like whatever it needs to. To add, remove or reorder slides, edit `src/components/deck-template/slidesRegistry.tsx`. In the scroll view, any section you leave empty doesn't render. To drop the striped placeholder boxes, set `placeholderMode: false`.
 
 **4. Deploy it**
 
