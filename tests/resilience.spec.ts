@@ -267,11 +267,18 @@ test.describe("from the keyboard", () => {
 test("reduced motion turns the fades off", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(`/deck-builder?view=deck#${at(2)}`);
-  const duration = await page
-    .locator('[aria-hidden="false"] section .transition-all')
-    .first()
-    .evaluate((el) => parseFloat(getComputedStyle(el).transitionDuration));
-  expect(duration).toBeLessThan(0.01);
+  await expect(page).toHaveURL(new RegExp(`#${at(2)}$`));
+  await expect(page.locator("html")).toHaveAttribute("data-deck-ready", "");
+  // The slide on screen can swap as the hash lands, so read it until it holds still.
+  await expect
+    .poll(() =>
+      page
+        .locator('[aria-hidden="false"] section .transition-all')
+        .first()
+        .evaluate((el) => parseFloat(getComputedStyle(el).transitionDuration))
+        .catch(() => 99),
+    )
+    .toBeLessThan(0.01);
 });
 
 test.describe("accessibility scan", () => {
