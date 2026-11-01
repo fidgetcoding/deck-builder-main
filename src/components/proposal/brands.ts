@@ -120,7 +120,7 @@ export const proposalTemplate: BrandConfig = {
   workPresentationImageLabel: "[The presentation image:]",
   downloadZipLabel: "[Download case film + presentation image (.zip)]",
 
-  momentsHeadline: "[Moments: stories to be saved.]",
+  momentsHeadline: "[Moments: updated, run one.]",
   funMoments: [
     {
       label: "[“Quotable line.”]",
