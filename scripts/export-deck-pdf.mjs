@@ -100,7 +100,7 @@ async function main() {
   }
 
   console.log(`→ launching headless chromium`);
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ headless: true, args: ["--mute-audio"] });
   const context = await browser.newContext({ viewport: { width, height } });
   const page = await context.newPage();
 

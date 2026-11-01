@@ -16,6 +16,7 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${port}`,
     trace: "on-first-retry",
+    headless: true,
   },
   webServer: {
     command:
@@ -28,7 +29,23 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        launchOptions: { args: ["--mute-audio"] },
+      },
     },
+    // Off by default. ALL_BROWSERS=1 adds these, muted and headless like Chromium.
+    ...(process.env.ALL_BROWSERS
+      ? [
+          {
+            name: "firefox",
+            use: {
+              ...devices["Desktop Firefox"],
+              launchOptions: { firefoxUserPrefs: { "media.volume_scale": "0.0" } },
+            },
+          },
+          { name: "webkit", use: { ...devices["Desktop Safari"] } },
+        ]
+      : []),
   ],
 });
