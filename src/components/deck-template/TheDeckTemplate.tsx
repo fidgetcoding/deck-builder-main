@@ -6,6 +6,12 @@ import { slides } from "./slidesRegistry";
 
 const TRANSITION_MS = 300;
 
+/** The slide under this element, if its content is taller than the screen. */
+function scrollingSlide(target: EventTarget | null): HTMLElement | null {
+  const slide = target instanceof Element ? target.closest("section") : null;
+  return slide && slide.scrollHeight > slide.clientHeight + 1 ? (slide as HTMLElement) : null;
+}
+
 type Props = {
   onSlideChange?: (idx: number) => void;
   initialSlideIdx?: number;
@@ -21,6 +27,10 @@ export default function TheDeckTemplate({ onSlideChange, initialSlideIdx = 0, ch
   useEffect(() => {
     onSlideChange?.(current);
   }, [current, onSlideChange]);
+
+  useEffect(() => {
+    document.documentElement.dataset.deckView ??= "deck";
+  }, []);
   const [prev, setPrev] = useState<number | null>(null);
   const [burgerOpen, setBurgerOpen] = useState(false);
   const [filmstripOpen, setFilmstripOpen] = useState(false);
@@ -107,6 +117,7 @@ export default function TheDeckTemplate({ onSlideChange, initialSlideIdx = 0, ch
   // so a single trackpad swipe doesn't fire through 5 slides at once.
   useEffect(() => {
     let lastWheelAt = 0;
+    let lastInnerScrollAt = 0;
     const WHEEL_DEBOUNCE_MS = 450;
     const WHEEL_DELTA_THRESHOLD = 24;
     function onWheel(e: WheelEvent) {
@@ -114,8 +125,21 @@ export default function TheDeckTemplate({ onSlideChange, initialSlideIdx = 0, ch
       if (filmstripOpen || burgerOpen) return;
       // Ignore predominantly-horizontal scrolls (trackpad swipe sideways).
       if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
-      if (Math.abs(e.deltaY) < WHEEL_DELTA_THRESHOLD) return;
       const now = Date.now();
+      // A slide taller than the screen scrolls first, and momentum from that
+      // scroll hitting the end shouldn't flip the slide.
+      const slide = scrollingSlide(e.target);
+      if (slide) {
+        const atEnd =
+          e.deltaY > 0
+            ? slide.scrollTop + slide.clientHeight >= slide.scrollHeight - 1
+            : slide.scrollTop <= 0;
+        if (!atEnd || now - lastInnerScrollAt < WHEEL_DEBOUNCE_MS) {
+          lastInnerScrollAt = now;
+          return;
+        }
+      }
+      if (Math.abs(e.deltaY) < WHEEL_DELTA_THRESHOLD) return;
       if (now - lastWheelAt < WHEEL_DEBOUNCE_MS) return;
       lastWheelAt = now;
       goTo(current + (e.deltaY > 0 ? 1 : -1));
@@ -138,6 +162,8 @@ export default function TheDeckTemplate({ onSlideChange, initialSlideIdx = 0, ch
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
       if (dx < 0) goTo(current + 1);
       else goTo(current - 1);
+    } else if (scrollingSlide(e.target)) {
+      // That vertical swipe was scrolling the slide.
     } else if (dy < -60 && Math.abs(dy) > Math.abs(dx) * 1.5) {
       setFilmstripOpen(true);
     } else if (dy > 60 && Math.abs(dy) > Math.abs(dx) * 1.5) {
@@ -147,8 +173,9 @@ export default function TheDeckTemplate({ onSlideChange, initialSlideIdx = 0, ch
   }
 
   return (
+    <>
     <div
-      className="fixed inset-0 bg-[#0a0a0a] text-white overflow-hidden select-none"
+      className="print:hidden fixed inset-0 bg-[#0a0a0a] text-white overflow-hidden select-none"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -189,5 +216,15 @@ export default function TheDeckTemplate({ onSlideChange, initialSlideIdx = 0, ch
         chromeVariant={chromeVariant}
       />
     </div>
+
+    {/* What a browser prints: every slide, one to a page. */}
+    <div className="deck-print hidden print:block text-white" aria-hidden="true">
+      {slides.map((slide) => (
+        <div key={slide.id} className="deck-print-slide">
+          <slide.Component />
+        </div>
+      ))}
+    </div>
+    </>
   );
 }

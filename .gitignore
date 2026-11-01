@@ -58,6 +58,3 @@ out/
 # playwright
 /test-results/
 /playwright-report/
-
-# written by next dev
-AGENTS.md

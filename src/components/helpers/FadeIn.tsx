@@ -1,6 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+
+const Resumed = createContext(false);
+
+/**
+ * After a live update the page should look like it never left, so everything on
+ * screen for the first render starts visible. Slides opened later still fade in.
+ */
+export function ResumeBoundary({ resumed, children }: { resumed: boolean; children: ReactNode }) {
+  const [active, setActive] = useState(resumed);
+  useEffect(() => {
+    const id = setTimeout(() => setActive(false));
+    return () => clearTimeout(id);
+  }, []);
+  return <Resumed.Provider value={active}>{children}</Resumed.Provider>;
+}
 
 export default function FadeIn({
   children,
@@ -12,7 +27,7 @@ export default function FadeIn({
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(useContext(Resumed));
 
   useEffect(() => {
     const observer = new IntersectionObserver(

@@ -7,8 +7,8 @@ const ACCENT = brand.accent;
 
 export default function SlideNextSteps() {
   return (
-    <section className="absolute inset-0 overflow-hidden pt-24 pb-24 px-6 sm:px-12 flex items-center justify-center">
-      <div className="mx-auto max-w-6xl flex flex-col items-center text-center">
+    <section className="absolute inset-0 overflow-y-auto pt-24 pb-32 tall-md:pb-24 px-6 sm:px-12 flex">
+      <div className="m-auto max-w-6xl flex flex-col items-center text-center">
         <FadeIn>
           <p
             className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.25em] mb-6"
@@ -45,7 +45,7 @@ export default function SlideNextSteps() {
         </FadeIn>
       </div>
 
-      <div className="absolute bottom-12 left-0 right-0 z-10 text-center pointer-events-none">
+      <div className="hidden tall-md:block absolute bottom-12 left-0 right-0 z-10 text-center pointer-events-none">
         <FadeIn delay={400}>
           <p className="text-[10px] text-white/20 uppercase tracking-[0.25em]">
             Confidential · Prepared for {brand.client}

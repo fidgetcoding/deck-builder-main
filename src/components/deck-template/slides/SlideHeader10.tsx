@@ -10,8 +10,8 @@ const placeholderStripes =
 
 export default function SlideHeader10() {
   return (
-    <section className="absolute inset-0 overflow-hidden pt-28 pb-16 px-6 sm:px-12">
-      <div className="mx-auto max-w-6xl h-full flex flex-col">
+    <section className="absolute inset-0 overflow-y-auto pt-28 pb-32 tall-md:pb-16 px-6 sm:px-12">
+      <div className="mx-auto max-w-6xl min-h-full tall-md:h-full flex flex-col">
         <FadeIn>
           <p
             className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.25em] mb-4"
@@ -21,7 +21,7 @@ export default function SlideHeader10() {
           </p>
         </FadeIn>
         <FadeIn delay={120}>
-          <h2 className="whitespace-nowrap font-bold leading-tight text-white mb-6 text-[clamp(0.95rem,2.1vw,2.25rem)]">
+          <h2 className="md:whitespace-nowrap font-bold leading-tight text-white mb-6 text-[clamp(0.95rem,2.1vw,2.25rem)]">
             Lorem ipsum dolor sit amet.
           </h2>
         </FadeIn>

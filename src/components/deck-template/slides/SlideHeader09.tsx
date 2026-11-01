@@ -27,7 +27,7 @@ export default function SlideHeader09() {
             className="rounded-md px-5 py-3 sm:px-7 sm:py-4 max-w-5xl"
             style={{ background: ACCENT }}
           >
-            <p className="whitespace-nowrap uppercase font-bold tracking-tight leading-snug text-white text-[clamp(0.7rem,1.35vw,1.5rem)]">
+            <p className="md:whitespace-nowrap uppercase font-bold tracking-tight leading-snug text-white text-[clamp(0.7rem,1.35vw,1.5rem)]">
               Lorem ipsum dolor sit amet consectetur.
             </p>
           </div>

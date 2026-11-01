@@ -7,8 +7,8 @@ const ACCENT = brand.accent;
 
 export default function SlideHeader08() {
   return (
-    <section className="absolute inset-0 flex items-center justify-center pt-24 pb-24 px-6 sm:px-12">
-      <div className="mx-auto max-w-6xl w-full">
+    <section className="absolute inset-0 flex overflow-y-auto pt-24 pb-32 tall-md:pb-24 px-6 sm:px-12">
+      <div className="m-auto max-w-6xl w-full">
         <FadeIn className="w-full">
           <div
             className="rounded-2xl overflow-hidden flex items-center justify-center w-full"

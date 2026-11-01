@@ -91,7 +91,7 @@ test.describe("pushing while someone's watching", () => {
 
     expect(await page.evaluate(() => performance.getEntriesByType("navigation")[0].toJSON().type)).toBe("reload");
     await expect(page).toHaveURL(/#4$/);
-    await expect(page.getByText("HEADER 03: Section Eyebrow")).toBeVisible();
+    await expect(page.getByText("HEADER 03: Section Eyebrow").first()).toBeVisible();
   });
 
   test("the scroll view keeps its view and its place", async ({ page }) => {
@@ -144,5 +144,132 @@ test.describe("pushing while someone's watching", () => {
 
     expect(await page.evaluate(() => performance.getEntriesByType("navigation")[0].toJSON().type)).toBe("navigate");
     await expect(page).toHaveURL(/#5$/);
+  });
+});
+
+test.describe("an update lands without a flash", () => {
+  // No JavaScript means this is exactly what the first paint looks like.
+  test.use({ javaScriptEnabled: false });
+
+  test("the server paints the resumed slide in place, at full strength", async ({ page }) => {
+    await page.goto("/deck-builder?view=deck&resume=4");
+    const heading = page.getByText("HEADER 03: Section Eyebrow").first();
+    await expect(heading).toBeVisible();
+    const opacity = await heading.evaluate((el) => {
+      let total = 1;
+      for (let node: Element | null = el; node; node = node.parentElement) {
+        total *= Number(getComputedStyle(node).opacity);
+      }
+      return total;
+    });
+    expect(opacity).toBe(1);
+    await expect(page.getByText("04 / 12").first()).toBeAttached();
+  });
+
+  test("the server paints the scroll view too, chrome already past the cover", async ({ page }) => {
+    await page.goto("/deck-builder?view=scroll&resume=1500");
+    await expect(page.locator("#letter")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Back to cover" })).toBeVisible();
+    await expect(page.getByText("[Work headline: lorem ipsum dolor sit amet.]")).toHaveCSS("opacity", "1");
+  });
+});
+
+test.describe("resuming", () => {
+  test("the URL cleans itself up afterward", async ({ page }) => {
+    await page.goto("/deck-builder?view=deck&resume=4#4");
+    await expect(page).toHaveURL(/\/deck-builder\?view=deck#4$/);
+  });
+
+  test("a garbage resume value is ignored", async ({ page }) => {
+    await page.goto("/deck-builder?view=deck&resume=<script>");
+    await expect(page.getByRole("button", { name: "Deck view" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("heading", { name: "[Headline" })).toHaveCount(0);
+  });
+});
+
+test.describe("deck view on small screens", () => {
+  const screens = [
+    // bottom: what the nav bar and view toggle cover. The toggle sits up top on the cover.
+    { name: "phone", width: 390, height: 844, top: 64, bottom: 94, coverBottom: 48 },
+    { name: "small phone", width: 320, height: 568, top: 64, bottom: 94, coverBottom: 48 },
+    { name: "phone on its side", width: 844, height: 390, top: 64, bottom: 54, coverBottom: 0 },
+  ];
+
+  for (const { name, width, height, top, bottom, coverBottom } of screens) {
+    test(`nothing is cut off on a ${name}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      for (let n = 1; n <= 12; n++) {
+        await page.goto(`/deck-builder?view=deck&resume=${n}#${n}`);
+        await expect(page.getByText(`${String(n).padStart(2, "0")} / 12`).first()).toBeAttached();
+        const problems = await page.evaluate(
+          ({ top, bottom }) => {
+            const slide = document.querySelector<HTMLElement>('[aria-hidden="false"] section')!;
+            const out: string[] = [];
+            const texts = () =>
+              Array.from(slide.querySelectorAll<HTMLElement>("h2,h3,h4,p,li,a,span"))
+                .filter((el) => el.innerText?.trim() && el.getClientRects().length);
+            slide.scrollTop = slide.scrollHeight;
+            const lowest = Math.max(...texts().map((el) => el.getBoundingClientRect().bottom));
+            if (lowest > innerHeight - bottom) out.push(`bottom ${Math.round(lowest)} of ${innerHeight - bottom}`);
+            slide.scrollTop = 0;
+            const highest = Math.min(...texts().map((el) => el.getBoundingClientRect().top));
+            if (highest < top && slide.scrollHeight > slide.clientHeight) out.push(`top ${Math.round(highest)}`);
+            for (const el of texts()) {
+              const r = el.getBoundingClientRect();
+              if (r.left < -1 || r.right > innerWidth + 1) out.push(`wide: ${el.innerText.slice(0, 24)}`);
+            }
+            return out;
+          },
+          { top, bottom: n === 1 ? coverBottom : bottom },
+        );
+        expect(problems, `slide ${n}`).toEqual([]);
+      }
+    });
+  }
+
+  test.describe("by touch", () => {
+    test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+
+    test("a swipe scrolls a long slide and leaves the tray alone", async ({ page }) => {
+      await page.goto("/deck-builder?view=deck&resume=4#4");
+      const slide = page.locator('[aria-hidden="false"] section');
+      await expect(slide).toBeVisible();
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send("Input.synthesizeScrollGesture", {
+        x: 195,
+        y: 500,
+        yDistance: -300,
+        gestureSourceType: "touch",
+      });
+      await expect.poll(() => slide.evaluate((el) => el.scrollTop)).toBeGreaterThan(100);
+      await expect(page.getByRole("button", { name: "Toggle slide tray" })).toHaveAttribute("aria-expanded", "false");
+    });
+  });
+});
+
+test.describe("printing the deck view", () => {
+  test("gives every slide, one to a page, wherever you were", async ({ page }) => {
+    await page.goto("/deck-builder?view=deck#7");
+    await expect(page).toHaveURL(/#7$/);
+    const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
+    expect(pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g)?.length).toBe(12);
+  });
+
+  test("cuts nothing off the page", async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.goto("/deck-builder?view=deck");
+    await page.emulateMedia({ media: "print" });
+    const slides = page.locator(".deck-print-slide");
+    await expect(slides).toHaveCount(12);
+    const clipped = await slides.evaluateAll((all) =>
+      all.flatMap((slide, i) => {
+        const section = slide.querySelector("section")!;
+        return section.scrollHeight > section.clientHeight + 1 || section.scrollWidth > section.clientWidth + 1
+          ? [`slide ${i + 1}: ${section.scrollHeight} of ${section.clientHeight}`]
+          : [];
+      }),
+    );
+    expect(clipped).toEqual([]);
+    await expect(page.getByRole("button", { name: "Deck view" })).toBeHidden();
   });
 });

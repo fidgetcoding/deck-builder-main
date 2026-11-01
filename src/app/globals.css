@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* A real laptop screen. Anything shorter or narrower lets slides grow and scroll. */
+@custom-variant tall-md (@media (min-width: 768px) and (min-height: 600px));
+
 /* ==========================================================================
    DECK BUILDER: DESIGN TOKEN SYSTEM
    ==========================================================================
@@ -186,8 +189,9 @@
   border-color: var(--border);
 }
 
+/* Matches the deck, so nothing white can show between two builds. */
 html {
-  background: #ffffff;
+  background: #0a0a0a;
 }
 
 body {
@@ -715,4 +719,36 @@ body {
 
 .animate-pill {
   animation: deckPillIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+
+/* ==========================================================================
+   PRINT
+   ==========================================================================
+   Deck view prints every slide, one to a page, same size the deck is built for.
+   ========================================================================== */
+@page {
+  size: 1920px 1080px;
+  margin: 0;
+}
+
+@media print {
+  html, body {
+    height: auto !important;
+    min-height: 0 !important;
+    display: block !important;
+    background: #0a0a0a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .deck-print-slide {
+    position: relative;
+    height: 1080px;
+    overflow: hidden;
+    break-after: page;
+    background: #0a0a0a;
+  }
+  .deck-print-slide:last-child {
+    break-after: auto;
+  }
 }

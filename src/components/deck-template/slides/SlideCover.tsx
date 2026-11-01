@@ -51,7 +51,7 @@ export default function SlideCover() {
         </FadeIn>
       </div>
 
-      <div className="absolute bottom-20 left-0 right-0 z-10 flex justify-center pointer-events-none">
+      <div className="absolute bottom-28 sm:bottom-20 left-0 right-0 z-10 flex justify-center pointer-events-none">
         <FadeIn delay={560}>
           <a
             href="#2"
@@ -79,7 +79,7 @@ export default function SlideCover() {
           </a>
         </FadeIn>
       </div>
-      <div className="absolute bottom-8 left-0 right-0 z-10 text-center pointer-events-none">
+      <div className="absolute bottom-16 sm:bottom-8 left-0 right-0 z-10 text-center pointer-events-none">
         <FadeIn delay={680}>
           <p className="text-xs text-white/40 uppercase tracking-[0.25em]">
             Prepared by {brand.name} · Confidential

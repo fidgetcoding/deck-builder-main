@@ -7,12 +7,12 @@ const ACCENT = brand.accent;
 
 export default function SlideHeader03() {
   return (
-    <section className="absolute inset-0 overflow-hidden pt-28 pb-16 px-6 sm:px-12">
-      <div className="mx-auto max-w-6xl h-full">
-        <div className="grid gap-6 md:grid-cols-2 md:gap-10 items-stretch h-full">
+    <section className="absolute inset-0 overflow-y-auto pt-28 pb-32 tall-md:pb-16 px-6 sm:px-12">
+      <div className="mx-auto max-w-6xl min-h-full tall-md:h-full">
+        <div className="grid gap-6 md:grid-cols-2 md:gap-10 items-stretch tall-md:h-full">
           <FadeIn>
             <div
-              className="relative aspect-[3/4] md:aspect-auto md:h-full rounded-2xl overflow-hidden flex items-center justify-center"
+              className="relative aspect-[3/4] tall-md:aspect-auto tall-md:h-full rounded-2xl overflow-hidden flex items-center justify-center"
               style={{
                 background:
                   "repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 12px, rgba(0,150,46,0.05) 12px 24px)",
@@ -25,7 +25,7 @@ export default function SlideHeader03() {
             </div>
           </FadeIn>
 
-          <div className="h-full flex flex-col">
+          <div className="tall-md:h-full flex flex-col">
             <FadeIn delay={120}>
               <p
                 className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.25em] mb-3"

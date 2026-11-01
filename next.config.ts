@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // Always ask. A CDN that held this would quietly stop live updates.
+      {
+        source: "/api/deck-version",
+        headers: [{ key: "Cache-Control", value: "public, max-age=0, must-revalidate" }],
+      },
       {
         source: "/(.*)",
         headers: [

@@ -12,13 +12,21 @@ type View = "deck" | "proposal";
 
 const PROPOSAL_FIRST_SECTION_ID = "letter";
 
-export default function DualTemplate() {
-  // Default view by viewport. SSR-safe: start with null, decide on mount.
-  const [view, setView] = useState<View | null>(null);
+export default function DualTemplate({
+  initialView = null,
+  initialDeckIdx = 0,
+  initialPastCover = false,
+}: {
+  initialView?: View | null;
+  initialDeckIdx?: number;
+  initialPastCover?: boolean;
+}) {
+  // ?view= is known on the server. Without it, the viewport picks on mount.
+  const [view, setView] = useState<View | null>(initialView);
 
   // Cross-view section memory. 0 = cover, >0 = some post-cover content.
-  const [deckIdx, setDeckIdx] = useState(0);
-  const [proposalPastCover, setProposalPastCover] = useState(false);
+  const [deckIdx, setDeckIdx] = useState(initialDeckIdx);
+  const [proposalPastCover, setProposalPastCover] = useState(initialPastCover);
 
   const isCover =
     view === "deck"
@@ -52,6 +60,11 @@ export default function DualTemplate() {
     setView(initialView);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  // DeckUpdateWatcher reads this to come back to the same view.
+  useEffect(() => {
+    if (view) document.documentElement.dataset.deckView = view === "deck" ? "deck" : "scroll";
+  }, [view]);
 
   // Track proposal scroll past the cover (cover is full-viewport on first section).
   useEffect(() => {
