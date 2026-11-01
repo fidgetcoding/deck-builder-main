@@ -75,7 +75,7 @@ git push
 
 Vercel builds it, and every open tab picks it up on its own and lands back on the same slide or scroll position. Nobody has to refresh anything.
 
-I timed this on the live demo: 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes. From `git push` to the edit on screen took 22 to 30 seconds, with a median of 24, and about 20 of those seconds are Vercel building. So it's "give me half a minute," and a bigger deck will take longer.
+I timed this on the live demo: 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes, with one of them sitting on an open booking modal. From `git push` to the edit on screen took 18 to 28 seconds, with a median of 22, and most of that is Vercel building. None of the 18 tabs reloaded, and the modal stayed open. So it's "give me half a minute," and a bigger deck will take longer.
 
 An edit to your words, slides, brand values or styles swaps in where the viewer already is. The page doesn't load again, so they keep their slide and scroll position, and an open booking modal or half-typed text stays exactly as it was.
 
@@ -112,7 +112,7 @@ npx playwright install chromium   # once
 npm run test:e2e                  # builds first, then tests the real build
 ```
 
-Ports 3000 and 3001 taken? Run `PORT=3457 npm run test:e2e`.
+Ports 3000 and 3001 taken? Run `PORT=3457 npm run test:e2e`. To run them in Firefox and WebKit too, install those browsers and set `ALL_BROWSERS=1`.
 
 ## More
 
