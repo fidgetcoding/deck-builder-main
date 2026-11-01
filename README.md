@@ -44,7 +44,7 @@ The two views are written separately, so edit both:
 | Deck | `src/components/deck-template/slides/` |
 | Scroll | `src/components/proposal/brands.ts` |
 
-Each slide is its own `.tsx` file, not a template fill-in, so a slide can look like whatever it needs to. To add, remove or reorder slides, edit `src/components/deck-template/slidesRegistry.tsx`. In the scroll view, any section you leave empty doesn't render. To drop the striped placeholder boxes, set `placeholderMode: false`.
+Each slide is its own `.tsx` file, not a template fill-in, so a slide can look like whatever it needs to. To add, remove or reorder slides, edit `src/components/deck-template/slidesRegistry.tsx`. Keep your words in the slides and in `brands.ts`, because those are what can swap in without the page loading again. A slide that needs a click handler or state should pull in a small `"use client"` component for that part, the way `SlideCover` uses `CoverArrow`. In the scroll view, any section you leave empty doesn't render. To drop the striped placeholder boxes, set `placeholderMode: false`.
 
 **4. Deploy it**
 
@@ -77,13 +77,15 @@ Vercel builds it, and every open tab picks it up on its own and lands back on th
 
 I timed this on the live demo: 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes. From `git push` to the edit on screen took 22 to 30 seconds, with a median of 24, and about 20 of those seconds are Vercel building. So it's "give me half a minute," and a bigger deck will take longer.
 
-The server renders the new page already on your slide at full strength, and the browser holds the old frame until it's ready, so the only thing that changes on screen is your edit.
+An edit to your words, slides, brand values or styles swaps in where the viewer already is. The page doesn't load again, so they keep their slide and scroll position, and an open booking modal or half-typed text stays exactly as it was.
+
+The one exception is a push that changes code running in the browser, like an interactive component or a dependency. An open tab can't swap its own code, so that one does load the page again. It waits until nobody's in the booking modal or watching a video with the sound on, and the server renders the new page already on the right slide, so it doesn't flash.
 
 ## What's in it
 
 - **Two views, one URL.** Laptops open on the deck, phones open on the scroll, and a toggle flips between them.
-- **Live updates.** Open tabs check for a new build every 5 seconds and move to it in place, without a flash. They won't do it while someone's in the booking modal or watching a video with the sound on, and they try again once that's done. Hidden tabs stop checking until they're looked at again. If a check fails mid-deploy, or the server's still handing out the old page, nothing happens and they try again.
-- **An optional passcode.** Checked on the server for every request, including the JavaScript that holds your slide copy, so nothing leaves without the code.
+- **Live updates.** Open tabs check for a new build every 3 seconds and swap new content in where the viewer is, with nothing else on the page changing. Hidden tabs stop checking until they're looked at again. If a check fails mid-deploy, or the server's still handing out the old page, nothing happens and they try again.
+- **An optional passcode.** Checked on the server for every request, so nothing of your deck leaves without the code.
 - **Deck navigation.** Arrow keys, Page Up and Down, Home and End, trackpad or mouse wheel, swipe, a numbered section bar, and a slide tray (press the up arrow). The on-screen arrows on desktop advance when you hover over them, no click needed. On a small screen, a long slide scrolls inside itself.
 - **Twelve starter slides.** Cover, ten layouts (text and image, three pillars, a big statement, pricing tiers, full bleed and so on) and a next steps slide.
 - **A scroll view with some manners.** Contents list, a letter up top, video and image sections, and a call to action at the bottom.
@@ -97,9 +99,10 @@ The server renders the new page already on your slide at full strength, and the 
 - **Phones start on the scroll view.** It reads better on a small screen, but deck view works too, and nothing gets cut off.
 - **Printing:** if somebody really needs a PDF, either view gives you the whole thing. The deck view prints every slide, one to a page, wherever you were. With the app running, `npm run pdf:export -- --url "http://localhost:3000/deck-builder?view=deck"` writes `out/deck.pdf` (run `npx playwright install chromium` once first). Pages are 1920 by 1080, so a slide taller than that gets cut off on paper. I've only checked the PDF output in Chromium.
 - **Analytics:** Vercel Analytics is wired in. Turn it on in your Vercel project, or delete `<Analytics />` from `src/app/layout.tsx`. Until then you'll see a harmless 404 for its script in the console.
-- **Polling:** each open tab makes one tiny request every 5 seconds. The CDN answers it from a file made at build time, so it doesn't wake a function, but it still counts as a request: about 17,000 a day for a tab left open and visible all day. To change the pace, edit `POLL_MS` in `src/components/DeckUpdateWatcher.tsx`.
-- **Vercel Skew Protection:** it's on by default for new projects on Vercel's Pro plan, and all my timings above ran with it on. It doesn't get in the way, because it leaves full page loads and plain `fetch()` calls going to the newest deployment.
-- **What I haven't tried:** real phones and Safari itself. The tests use Playwright's browser engines, and in WebKit a few updates showed a one-frame blip under 1% of the screen.
+- **Polling:** each open tab makes one tiny request every 3 seconds. The CDN answers it from a file made at build time, so it doesn't wake a function, but it still counts as a request: about 29,000 a day for a tab left open and visible all day. To change the pace, edit `POLL_MS` in `src/components/DeckUpdateWatcher.tsx`.
+- **Types aren't checked on Vercel:** the typecheck is the one slow build step I could cut, so Vercel skips it and CI runs it on every push. A push with a type error can still go live, so watch CI if you're changing code rather than copy.
+- **Vercel Skew Protection:** it's on by default for new projects on Vercel's Pro plan, and all my timings ran with it on. It would normally tie a tab's refreshes to the deployment it loaded from, so for a content swap the deck deliberately asks for the newest one.
+- **What I haven't tried:** real phones and Safari itself. The tests use Playwright's browser engines.
 
 ## Tests
 
