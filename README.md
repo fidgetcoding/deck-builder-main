@@ -1,4 +1,4 @@
-<!-- banner goes here -->
+![deck-builder-main: who the hell wants to download a PDF?](docs/images/banner.png)
 
 # deck-builder-main
 
@@ -21,7 +21,7 @@ It's a Next.js app and your content is code. There's no editor UI: you (or your 
 **1. Clone it and run it**
 
 ```bash
-git clone <this repo> my-deck
+git clone https://github.com/fidgetcoding/deck-builder-main.git my-deck
 cd my-deck
 npm install
 npm run dev
@@ -75,14 +75,14 @@ git push
 
 Vercel builds it, and every open tab picks it up on its own and lands back on the same slide or scroll position. Nobody has to refresh anything.
 
-I timed this on the live demo: 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes. From `git push` to the edit on screen took 22 to 30 seconds, with a median of 24, and about 20 of those seconds are Vercel building. So it's "give me half a minute," not instant, and a bigger deck will take longer.
+I timed this on the live demo: 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes. From `git push` to the edit on screen took 22 to 30 seconds, with a median of 24, and about 20 of those seconds are Vercel building. So it's "give me half a minute," and a bigger deck will take longer.
 
-It's still a page reload under the hood, because a new build means new code, but it doesn't look like one. The server renders the new page already on your slide at full strength, and the browser holds the old frame until it's ready, so the only thing that changes on screen is your edit.
+The server renders the new page already on your slide at full strength, and the browser holds the old frame until it's ready, so the only thing that changes on screen is your edit.
 
 ## What's in it
 
 - **Two views, one URL.** Laptops open on the deck, phones open on the scroll, and a toggle flips between them.
-- **Live updates.** Open tabs check for a new build every 5 seconds and reload in place, without a flash. They won't do it while someone's in the booking modal or watching a video with the sound on, and they try again once that's done. Hidden tabs stop checking until they're looked at again. If a check fails mid-deploy, or the server's still handing out the old page, nothing happens and they try again.
+- **Live updates.** Open tabs check for a new build every 5 seconds and move to it in place, without a flash. They won't do it while someone's in the booking modal or watching a video with the sound on, and they try again once that's done. Hidden tabs stop checking until they're looked at again. If a check fails mid-deploy, or the server's still handing out the old page, nothing happens and they try again.
 - **An optional passcode.** Checked on the server for every request, including the JavaScript that holds your slide copy, so nothing leaves without the code.
 - **Deck navigation.** Arrow keys, Page Up and Down, Home and End, trackpad or mouse wheel, swipe, a numbered section bar, and a slide tray (press the up arrow). The on-screen arrows on desktop advance when you hover over them, no click needed. On a small screen, a long slide scrolls inside itself.
 - **Twelve starter slides.** Cover, ten layouts (text and image, three pillars, a big statement, pricing tiers, full bleed and so on) and a next steps slide.
@@ -99,7 +99,7 @@ It's still a page reload under the hood, because a new build means new code, but
 - **Analytics:** Vercel Analytics is wired in. Turn it on in your Vercel project, or delete `<Analytics />` from `src/app/layout.tsx`. Until then you'll see a harmless 404 for its script in the console.
 - **Polling:** each open tab makes one tiny request every 5 seconds. The CDN answers it from a file made at build time, so it doesn't wake a function, but it still counts as a request: about 17,000 a day for a tab left open and visible all day. To change the pace, edit `POLL_MS` in `src/components/DeckUpdateWatcher.tsx`.
 - **Vercel Skew Protection:** it's on by default for new projects on Vercel's Pro plan, and all my timings above ran with it on. It doesn't get in the way, because it leaves full page loads and plain `fetch()` calls going to the newest deployment.
-- **What I haven't tried:** real phones and Safari itself. The tests use Playwright's browser engines, and in WebKit a few reloads showed a one-frame blip under 1% of the screen.
+- **What I haven't tried:** real phones and Safari itself. The tests use Playwright's browser engines, and in WebKit a few updates showed a one-frame blip under 1% of the screen.
 
 ## Tests
 

@@ -1,3 +1,7 @@
+To explain or evaluate this project, read ESSENCE.md, then EVOLUTION.md, then the code.
+
+Live demo: <https://deck-builder-main.vercel.app/deck-builder>
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
