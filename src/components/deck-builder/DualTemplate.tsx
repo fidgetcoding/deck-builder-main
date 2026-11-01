@@ -145,6 +145,11 @@ export default function DualTemplate({
 
   return (
     <>
+      <noscript>
+        <a href="?view=scroll" className="fixed bottom-16 left-3 z-[70] underline text-white text-sm">
+          Read the whole deck on one page
+        </a>
+      </noscript>
       {view === "deck" ? (
         <TheDeckTemplate
           slides={slides}
@@ -154,8 +159,13 @@ export default function DualTemplate({
         />
       ) : (
         <>
-          <ProposalCover />
-          <BrandProposal brand={proposal} chromeVariant="rounded-rect" />
+          <main>
+            <h1 className="sr-only">
+              {proposal.name}
+            </h1>
+            <ProposalCover />
+            <BrandProposal brand={proposal} chromeVariant="rounded-rect" />
+          </main>
         </>
       )}
 

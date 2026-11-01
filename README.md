@@ -101,7 +101,7 @@ The one exception is a push that changes code running in the browser, like an in
 
 ## Good to know
 
-- **Without a passcode, the link is the only lock.** Anyone who has the URL can read the deck, and "Confidential" on a slide is just a word. With one, it's still a single shared code, with no accounts and no lockout, just a half-second wait after a wrong guess, so make it long. See [SECURITY.md](SECURITY.md).
+- **Without a passcode, the link is the only lock.** Anyone who has the URL can read the deck, and "Confidential" on a slide is just a word. With one, it's still a single shared code, with no accounts, no lockout and no real limit on guessing, so make it long and random. See [SECURITY.md](SECURITY.md).
 - **Phones start on the scroll view.** It reads better on a small screen, but deck view works too, and nothing gets cut off.
 - **Printing:** if somebody really needs a PDF, either view gives you the whole thing. The deck view prints every slide, one to a page, wherever you were. With the app running, `npm run pdf:export -- --url "http://localhost:3000/deck-builder?view=deck"` writes `out/deck.pdf` (run `npx playwright install chromium` once first). On a locked deck, set `DECK_PASSCODE` when you run it. Pages are 1920 by 1080, so a slide taller than that gets cut off on paper. I've only checked the PDF output in Chromium.
 - **Light theme:** set `theme: "light"` in `brands.ts` for a light scroll view, along with light `bg`, dark `fg` and dark `muted`. Only the scroll view changes: the deck view, the top bar and the view toggle stay dark. It uses `public/wmark-dark.svg` for the logo.

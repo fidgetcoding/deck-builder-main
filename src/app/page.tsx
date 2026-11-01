@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#050505] px-6 text-white">
       <div className="flex flex-col items-center gap-8 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">
           {brand.name}
         </p>
         <h1 className="text-4xl font-light uppercase tracking-tight sm:text-6xl md:text-7xl">

@@ -20,6 +20,7 @@ export default function ClientLogoHeader({
   return (
     <div
       aria-hidden={!visible}
+      inert={!visible}
       className={`print:hidden fixed top-0 inset-x-0 z-40 h-16 transition-opacity duration-300 ${
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
@@ -33,7 +34,7 @@ export default function ClientLogoHeader({
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          aria-label="Back to cover"
+          aria-label={`Back to cover: ${label} x ${brand.name}`}
           className="flex items-center gap-4 sm:gap-6 group focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded"
         >
           {clientLogoSrc ? (

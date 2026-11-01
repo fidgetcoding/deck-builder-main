@@ -30,7 +30,8 @@ export default function BrandMenu({ brand, chromeVariant = "circle" }: Props) {
   const burgerSize = isRect ? "w-10 h-10" : "w-11 h-11";
 
   return (
-    <div
+    <nav
+      aria-label="Menu"
       className={containerPos}
       onPointerEnter={handleOpen}
       onPointerLeave={handleLeave}
@@ -40,6 +41,8 @@ export default function BrandMenu({ brand, chromeVariant = "circle" }: Props) {
           open ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         aria-hidden={!open}
+        inert={!open}
+        data-deck-menu=""
       >
         <ContactModalTrigger
           className="shrink-0 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] py-1 transition-colors cursor-pointer bg-transparent border-0"
@@ -50,10 +53,16 @@ export default function BrandMenu({ brand, chromeVariant = "circle" }: Props) {
 
       <button
         type="button"
-        onClick={() => {
+        onClick={(e) => {
           // Hovering opened it a moment ago, so a click on the way in shouldn't undo that.
           if (Date.now() - openedAt.current < 400) return;
           setOpen((v) => !v);
+          // From the keyboard (detail 0), move into the menu that just opened.
+          if (e.detail === 0 && !open) {
+            requestAnimationFrame(() =>
+              document.querySelector<HTMLElement>("[data-deck-menu]:not([inert]) :is(a, button)")?.focus(),
+            );
+          }
         }}
         aria-expanded={open}
         aria-label={open ? "Close menu" : "Open menu"}
@@ -99,6 +108,6 @@ export default function BrandMenu({ brand, chromeVariant = "circle" }: Props) {
           </svg>
         )}
       </button>
-    </div>
+    </nav>
   );
 }

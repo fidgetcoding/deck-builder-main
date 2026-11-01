@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type PointerEvent } from "react";
+import { useEffect, useRef, type MouseEvent, type PointerEvent } from "react";
 import type { SlideMeta } from "./slideTypes";
 import { useBrand } from "@/components/BrandContext";
 import ContactModalTrigger from "@/components/shared/ContactModalTrigger";
@@ -50,10 +50,16 @@ export default function DeckChrome({
   const hoverCloseBurger = (e: PointerEvent) => {
     if (e.pointerType === "mouse") setBurgerOpen(false);
   };
-  const clickBurger = () => {
+  const clickBurger = (e: MouseEvent) => {
     // Hovering opened it a moment ago, so a click on the way in shouldn't undo that.
     if (Date.now() - hoveredOpenAt.current < 400) return;
     setBurgerOpen(!burgerOpen);
+    // From the keyboard (detail 0), move into the menu that just opened.
+    if (e.detail === 0 && !burgerOpen) {
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>("[data-deck-menu]:not([inert]) :is(a, button)")?.focus(),
+      );
+    }
   };
   const isRect = chromeVariant === "rounded-rect";
   // Size-proportional radii (~25% of side) for clear rounded-square look on every button
@@ -82,13 +88,13 @@ export default function DeckChrome({
   return (
     <>
       {!isCover && (
-        <div className="absolute top-0 inset-x-0 z-40 h-16 flex items-center px-4 sm:px-6 bg-[#0a0a0a]/70 backdrop-blur-md border-b border-white/5">
+        <nav aria-label="Deck" className="absolute top-0 inset-x-0 z-40 h-16 flex items-center px-4 sm:px-6 bg-[#0a0a0a]/70 backdrop-blur-md border-b border-white/5">
           <button
             type="button"
             onClick={onJumpHome}
             className="flex items-center gap-3 sm:gap-4 shrink-0 group focus:outline-none focus-visible:ring-2 rounded"
             style={{ ["--tw-ring-color" as string]: ACCENT }}
-            aria-label="Return to cover"
+            aria-label={`Return to cover: ${brand.client} x ${brand.name}`}
           >
             <span className="text-white/80 text-[11px] sm:text-xs font-bold uppercase tracking-[0.22em] group-hover:text-white transition-colors">
               {brand.client}
@@ -111,6 +117,7 @@ export default function DeckChrome({
                 burgerOpen ? "opacity-0 pointer-events-none" : "opacity-100"
               }`}
               aria-hidden={burgerOpen}
+              inert={burgerOpen}
             >
               {sections.map((s) => {
                 const active = activeSection === s.id;
@@ -133,6 +140,8 @@ export default function DeckChrome({
                 burgerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
               }`}
               aria-hidden={!burgerOpen}
+              inert={!burgerOpen}
+              data-deck-menu=""
               onPointerEnter={hoverOpenBurger}
             >
               <ContactModalTrigger className="shrink-0 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] py-1 text-white/80 hover:text-white transition-colors focus:outline-none cursor-pointer">
@@ -168,7 +177,7 @@ export default function DeckChrome({
             style={{ width: `${progressPct}%`, background: ACCENT }}
             aria-hidden
           />
-        </div>
+        </nav>
       )}
 
       {isCover && (
@@ -182,6 +191,8 @@ export default function DeckChrome({
               burgerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
             }`}
             aria-hidden={!burgerOpen}
+              inert={!burgerOpen}
+              data-deck-menu=""
           >
             <ContactModalTrigger className="shrink-0 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] py-1 text-white/80 hover:text-white transition-colors focus:outline-none cursor-pointer">
               Contact
@@ -217,6 +228,7 @@ export default function DeckChrome({
         <button
           type="button"
           onMouseEnter={() => { if (!atFirst) onPrev(); }}
+          onClick={(e) => { if (e.detail === 0) onPrev(); }}
           disabled={atFirst}
           aria-label="Previous slide"
           className={`hidden sm:flex absolute left-3 md:left-5 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 items-center justify-center ${chevronShape} border border-white/10 bg-[#0a0a0a]/40 backdrop-blur transition-all focus:outline-none ${
@@ -240,6 +252,7 @@ export default function DeckChrome({
         <button
           type="button"
           onMouseEnter={() => { if (!atLast) onNext(); }}
+          onClick={(e) => { if (e.detail === 0) onNext(); }}
           disabled={atLast}
           aria-label="Next slide"
           className={`hidden sm:flex absolute right-3 md:right-5 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 items-center justify-center ${chevronShape} border border-white/10 bg-[#0a0a0a]/40 backdrop-blur transition-all focus:outline-none ${
@@ -313,6 +326,7 @@ export default function DeckChrome({
         }`}
         style={{ bottom: 0, height: "168px" }}
         aria-hidden={!filmstripOpen}
+        inert={!filmstripOpen}
       >
         <button
           type="button"

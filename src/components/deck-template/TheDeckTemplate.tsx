@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import DeckChrome from "./DeckChrome";
 import type { DeckSlide } from "./slideTypes";
+import { useBrand } from "@/components/BrandContext";
 
 const TRANSITION_MS = 300;
 
@@ -21,6 +22,8 @@ type Props = {
 
 export default function TheDeckTemplate({ slides, onSlideChange, initialSlideIdx = 0, chromeVariant }: Props) {
   const total = slides.length;
+  const brand = useBrand();
+  const deckTitle = `${brand.client} x ${brand.name}`;
   const [requested, setCurrent] = useState(() =>
     Math.max(0, Math.min(slides.length - 1, initialSlideIdx)),
   );
@@ -85,11 +88,25 @@ export default function TheDeckTemplate({ slides, onSlideChange, initialSlideIdx
   }, [current]);
 
   useEffect(() => {
+    // Up and down read a slide that's taller than the screen before they do anything else.
+    function scrollSlide(direction: 1 | -1) {
+      const slide = scrollingSlide(document.querySelector('[aria-hidden="false"] section'));
+      if (!slide) return false;
+      const atEnd =
+        direction > 0
+          ? slide.scrollTop + slide.clientHeight >= slide.scrollHeight - 1
+          : slide.scrollTop <= 0;
+      if (atEnd) return false;
+      slide.scrollBy({ top: direction * 120 });
+      return true;
+    }
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
         return;
       }
+      // The booking modal has the keyboard while it's open.
+      if (document.querySelector('[role="dialog"]')) return;
       if (e.key === "ArrowLeft" || e.key === "PageUp") {
         e.preventDefault();
         goTo(current - 1);
@@ -98,9 +115,11 @@ export default function TheDeckTemplate({ slides, onSlideChange, initialSlideIdx
         goTo(current + 1);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
+        if (!filmstripOpen && scrollSlide(-1)) return;
         setFilmstripOpen(true);
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
+        if (!filmstripOpen && scrollSlide(1)) return;
         if (current === 0) {
           goTo(1);
         } else {
@@ -119,7 +138,7 @@ export default function TheDeckTemplate({ slides, onSlideChange, initialSlideIdx
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [current, total, goTo]);
+  }, [current, total, goTo, filmstripOpen]);
 
   // Wheel / trackpad → advance slide. One gesture = one slide via debounce
   // so a single trackpad swipe doesn't fire through 5 slides at once.
@@ -130,7 +149,7 @@ export default function TheDeckTemplate({ slides, onSlideChange, initialSlideIdx
     const WHEEL_DELTA_THRESHOLD = 24;
     function onWheel(e: WheelEvent) {
       // Ignore while filmstrip or burger is open: they have their own scroll.
-      if (filmstripOpen || burgerOpen) return;
+      if (filmstripOpen || burgerOpen || document.querySelector('[role="dialog"]')) return;
       // Ignore predominantly-horizontal scrolls (trackpad swipe sideways).
       if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
       const now = Date.now();
@@ -182,7 +201,7 @@ export default function TheDeckTemplate({ slides, onSlideChange, initialSlideIdx
 
   return (
     <>
-    <div
+    <main
       className="print:hidden fixed inset-0 bg-[#0a0a0a] text-white overflow-hidden select-none"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
@@ -223,7 +242,11 @@ export default function TheDeckTemplate({ slides, onSlideChange, initialSlideIdx
         setFilmstripOpen={setFilmstripOpen}
         chromeVariant={chromeVariant}
       />
-    </div>
+      <h1 className="sr-only">{deckTitle}</h1>
+      <p className="sr-only" aria-live="polite">
+        Slide {current + 1} of {total}: {slides[current]?.caption}
+      </p>
+    </main>
 
     {/* What a browser prints: every slide, one to a page. */}
     <div className="deck-print hidden print:block text-white" aria-hidden="true">

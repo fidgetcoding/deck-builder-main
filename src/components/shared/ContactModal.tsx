@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useBrand } from '@/components/BrandContext';
 
@@ -7,10 +7,31 @@ type Props = { open: boolean; onClose: () => void };
 
 export function ContactModal({ open, onClose }: Props) {
   const brand = useBrand();
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
+    const opener = document.activeElement as HTMLElement | null;
+    const stops = () =>
+      Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button, a, iframe') ?? []);
+    stops()[0]?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        // Only the top layer closes, so the menu underneath stays open to return to.
+        e.stopPropagation();
+        onClose();
+      }
+      if (e.key !== 'Tab') return;
+      // Tab stays inside the modal.
+      const all = stops();
+      const first = all[0];
+      const last = all[all.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
     };
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
@@ -18,6 +39,7 @@ export function ContactModal({ open, onClose }: Props) {
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
+      opener?.focus?.();
     };
   }, [open, onClose]);
 
@@ -26,6 +48,7 @@ export function ContactModal({ open, onClose }: Props) {
   // Portal: the deck top bar uses backdrop-blur, which would trap a fixed child.
   return createPortal(
     <div
+      ref={dialogRef}
       onClick={onClose}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black"
       role="dialog"

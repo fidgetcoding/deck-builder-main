@@ -743,3 +743,33 @@ body {
     break-after: auto;
   }
 }
+
+
+/* ==========================================================================
+   ACCESS AND SLOW CONNECTIONS
+   ========================================================================== */
+
+/* Beats Tailwind's focus:outline-none, so the keyboard always shows where it is. */
+:focus-visible {
+  outline: 2px solid var(--brand-green-light) !important;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Copy starts faded out and JS fades it in. If JS is slow or never comes, show it anyway. */
+@keyframes fadeWithoutJs {
+  to { opacity: 1; transform: none; }
+}
+html:not([data-deck-ready]) .fade-wait {
+  animation: fadeWithoutJs 0.4s ease-out 1s forwards;
+}

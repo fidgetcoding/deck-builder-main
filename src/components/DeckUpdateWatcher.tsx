@@ -5,8 +5,13 @@ import { useEffect } from "react";
 
 const POLL_MS = 3_000;
 const WARM_TIMEOUT_MS = 3_000;
-// A refresh that hasn't landed after this many checks falls back to a reload.
+// Nothing a tab asks for gets to hang forever, or one stuck request stops all updates.
+const REQUEST_TIMEOUT_MS = 20_000;
+// How long a slow connection gets to deliver a swap before we ask again.
+const REFRESH_PATIENCE_MS = 30_000;
+// A refresh that hasn't landed after this many goes falls back to a reload.
 const MAX_REFRESH_TRIES = 3;
+const RETRY_MS = 3_000;
 
 /** Don't yank the page out from under someone booking a call or watching a film. */
 function viewerIsBusy() {
@@ -62,7 +67,7 @@ const scriptPaths = (root: Document) =>
 
 /** Fetch the new page. Mid-deploy a server can still hand back the old one, so check. */
 async function fetchNewPage(version: string) {
-  const res = await fetch(resumeUrl(), { cache: "no-store" });
+  const res = await fetch(resumeUrl(), { cache: "no-store", signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   if (res.redirected && new URL(res.url).pathname === "/unlock") {
     // The deck got locked, or its passcode changed. Show this viewer the form.
     window.location.reload();
@@ -106,60 +111,95 @@ export default function DeckUpdateWatcher() {
   useEffect(() => {
     finishResume();
 
+    document.documentElement.dataset.deckReady = "";
+
     // Next pins its refreshes to the deployment this tab loaded from, and reloads
     // the page if the answer comes from any other. For a content swap we want the
     // newest deployment and no reload, so for those requests we drop the pin and
     // vouch for the answer ourselves. If this ever stops matching how Next works,
     // the worst case is that Next falls back to a reload.
+    //
+    // Next also navigates away if the request can't connect, which offline means a
+    // browser error page in front of whoever's watching. So a dropped connection
+    // just waits here and tries again.
     const realFetch = window.fetch;
     let swapping = false;
+    let refreshedAt = 0;
+    let waitingOnNetwork = false;
     window.fetch = async (input, init) => {
       const headers = new Headers(init?.headers);
       if (!swapping || !headers.has("RSC")) return realFetch(input, init);
       const pin = headers.get("x-deployment-id");
       headers.delete("x-deployment-id");
-      const res = await realFetch(input, { ...init, headers });
-      if (!pin) return res;
-      const vouched = new Response(res.body, res);
-      vouched.headers.set("x-nextjs-deployment-id", pin);
-      Object.defineProperty(vouched, "url", { value: res.url });
-      Object.defineProperty(vouched, "redirected", { value: res.redirected });
-      return vouched;
+      for (;;) {
+        try {
+          const signal = AbortSignal.timeout(REFRESH_PATIENCE_MS);
+          const res = await realFetch(input, {
+            ...init,
+            headers,
+            signal: init?.signal ? AbortSignal.any([init.signal, signal]) : signal,
+          });
+          waitingOnNetwork = false;
+          if (!res.ok) refreshedAt = 0;
+          if (!pin) return res;
+          const vouched = new Response(res.body, res);
+          vouched.headers.set("x-nextjs-deployment-id", pin);
+          Object.defineProperty(vouched, "url", { value: res.url });
+          Object.defineProperty(vouched, "redirected", { value: res.redirected });
+          return vouched;
+        } catch {
+          if (init?.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+          waitingOnNetwork = true;
+          await new Promise((resolve) => setTimeout(resolve, RETRY_MS));
+        }
+      }
     };
 
     let checking = false;
-    let triesFor: string | null = null;
+    let seenStamp = document.documentElement.dataset.deckBuild;
     let tries = 0;
+    let needsReloadFor: string | null = null;
 
     const check = async () => {
       if (checking || document.visibilityState === "hidden") return;
       checking = true;
       try {
-        const res = await fetch("/api/deck-version", { cache: "no-store" });
+        const res = await fetch("/api/deck-version", {
+          cache: "no-store",
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
         if (!res.ok) return;
         const { version } = (await res.json()) as { version: string };
-        if (version === document.documentElement.dataset.deckBuild) {
+        const stamp = document.documentElement.dataset.deckBuild;
+        if (stamp !== seenStamp) {
+          seenStamp = stamp;
+          tries = 0;
+          refreshedAt = 0;
+        }
+        if (version === stamp) {
           swapping = false;
           return;
         }
+        // A swap is on its way, however slowly. Don't pile on.
+        if (waitingOnNetwork || Date.now() - refreshedAt < REFRESH_PATIENCE_MS) return;
+        // New code, and someone's busy: no need to fetch the page again every tick.
+        if (needsReloadFor === version && viewerIsBusy()) return;
 
         const doc = await fetchNewPage(version);
         if (!doc) return;
 
         const loaded = new Set(scriptPaths(document));
         const sameCode = scriptPaths(doc).every((path) => loaded.has(path));
-        if (triesFor !== version) {
-          triesFor = version;
-          tries = 0;
-        }
         if (sameCode && tries < MAX_REFRESH_TRIES) {
           tries++;
           swapping = true;
+          refreshedAt = Date.now();
           router.refresh();
           return;
         }
 
         swapping = false;
+        needsReloadFor = version;
         if (viewerIsBusy()) return;
         await warm(doc);
         if (viewerIsBusy()) return;
@@ -176,10 +216,12 @@ export default function DeckUpdateWatcher() {
     check();
     const interval = window.setInterval(check, POLL_MS);
     document.addEventListener("visibilitychange", check);
+    window.addEventListener("online", check);
     return () => {
       window.fetch = realFetch;
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", check);
+      window.removeEventListener("online", check);
     };
   }, [router]);
 

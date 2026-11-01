@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { LOCKED_URL, TEST_PASSCODE } from "../playwright.config";
 import { brand } from "../src/lib/brand";
 import { proposalTemplate } from "../src/components/proposal/brands";
@@ -160,6 +161,53 @@ test.describe("with DECK_PASSCODE set, part two", () => {
 
     await expect(page).toHaveURL(/\/unlock/);
     await expect(page.getByLabel("Passcode")).toBeVisible();
+  });
+
+  test("the passcode form passes an accessibility scan", async ({ page }) => {
+    await page.goto("/unlock");
+    const { violations } = await new AxeBuilder({ page }).analyze();
+    expect(violations.map((v) => v.id)).toEqual([]);
+  });
+
+  test("a huge form is refused however it's sent", async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(`passcode=${"a".repeat(100_000)}`));
+        controller.close();
+      },
+    });
+    const res = await fetch(`${LOCKED_URL}/unlock`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: stream,
+      duplex: "half",
+    } as RequestInit);
+    expect(res.status).toBe(413);
+  });
+
+  test("unlocking never sends you back to the form", async ({ request }) => {
+    const res = await request.post("/unlock", {
+      form: { passcode: TEST_PASSCODE, next: "/unlock" },
+      maxRedirects: 0,
+    });
+    expect(new URL(res.headers().location, LOCKED_URL).pathname).toBe("/deck-builder");
+  });
+
+  test("tricks to get around the lock don't work", async ({ request }) => {
+    const cases: [string, Record<string, string>][] = [
+      ["/deck-builder", { "x-middleware-subrequest": "src/proxy:src/proxy:src/proxy:src/proxy:src/proxy" }],
+      ["/deck-builder", { "x-middleware-subrequest": "middleware:middleware:middleware:middleware:middleware" }],
+      ["/deck-builder", { RSC: "1" }],
+      ["/", { RSC: "1", "Next-Router-Prefetch": "1" }],
+      ["/index.rsc", {}],
+      ["/deck-builder.rsc", {}],
+      ["/DECK-BUILDER", {}],
+    ];
+    for (const [path, headers] of cases) {
+      const res = await request.get(path, { headers, maxRedirects: 0 });
+      expect(leaked(await res.text()), `${path} ${JSON.stringify(headers)}`).toEqual([]);
+      expect(res.status(), `${path} ${JSON.stringify(headers)}`).not.toBe(200);
+    }
   });
 
   const exportPdf = (out: string, env: Record<string, string> = {}) =>

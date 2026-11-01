@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import DualTemplate from "@/components/deck-builder/DualTemplate";
 import { ResumeBoundary } from "@/components/helpers/FadeIn";
 import { deckSlides } from "@/components/deck-template/slidesRegistry";
@@ -20,8 +21,11 @@ export default async function DeckBuilderPage({
   searchParams: Promise<{ view?: string; resume?: string }>;
 }) {
   const { view, resume } = await searchParams;
+  // With no ?view=, guess from the device so the first paint is the deck, not nothing.
+  // The browser corrects it on mount if the guess was wrong.
+  const isPhone = /Mobi|Android|iPhone/i.test((await headers()).get("user-agent") ?? "");
   const initialView =
-    view === "deck" ? "deck" : view === "scroll" || view === "proposal" ? "proposal" : null;
+    view === "deck" ? "deck" : view === "scroll" || view === "proposal" || isPhone ? "proposal" : "deck";
   const resumeAt = resume && /^\d+$/.test(resume) ? parseInt(resume, 10) : null;
 
   return (

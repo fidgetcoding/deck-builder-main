@@ -26,8 +26,7 @@ export default function ViewToggle({ view, isCover, onToggle }: Props) {
     "relative z-10 flex items-center justify-center gap-1.5 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] transition-colors duration-200 focus:outline-none";
 
   return (
-    <div
-      role="group"
+    <nav
       aria-label="View toggle"
       className={`print:hidden fixed z-[60] ${positionClass} inline-flex items-center rounded-xl border border-white/10 bg-[#0a0a0a]/40 backdrop-blur-xl backdrop-saturate-150 shadow-[0_2px_20px_rgba(0,0,0,0.35)]`}
       style={{ padding: PADDING }}
@@ -53,7 +52,6 @@ export default function ViewToggle({ view, isCover, onToggle }: Props) {
         type="button"
         onClick={() => setView("deck")}
         onMouseEnter={() => setView("deck")}
-        onFocus={() => setView("deck")}
         aria-pressed={view === "deck"}
         aria-label="Deck view"
         style={{ width: SEGMENT_W }}
@@ -83,7 +81,6 @@ export default function ViewToggle({ view, isCover, onToggle }: Props) {
         type="button"
         onClick={() => setView("proposal")}
         onMouseEnter={() => setView("proposal")}
-        onFocus={() => setView("proposal")}
         aria-pressed={view === "proposal"}
         aria-label="Scroll view"
         style={{ width: SEGMENT_W }}
@@ -110,6 +107,6 @@ export default function ViewToggle({ view, isCover, onToggle }: Props) {
         </svg>
         Scroll
       </button>
-    </div>
+    </nav>
   );
 }
