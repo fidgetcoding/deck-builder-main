@@ -25,12 +25,15 @@ Security research done in good faith is welcome. No legal action against anyone 
 
 Know this before you put anything real in a deck:
 
-- **A deck is a public URL.** There's no login and no password. Anyone with the link can read it. The word "Confidential" on the slides is a label, not a lock.
+- **Without `DECK_PASSCODE`, a deck is a public URL.** Anyone with the link can read it. The word "Confidential" on the slides is a label, not a lock.
+- **With `DECK_PASSCODE`, nothing leaves the server without the code.** That covers pages, the JavaScript chunks that hold slide copy, images and public files. I checked this on a real Vercel deployment as well as in the tests. The only things still open are the passcode form and `/api/deck-version`, which returns a build ID.
+- **It's one shared code.** There are no accounts, no audit log and no lockout, only a half-second wait after a wrong guess, so use a long one. Anyone who has it can pass it on. Changing it signs everyone out.
+- **The lock isn't retroactive.** A deployment made before you set the passcode stays unlocked at its own URL, and Vercel's Skew Protection can route to it by deployment ID until its maximum age runs out. Put the lock on before the real content goes in, or delete the old deployments.
 - **Search engines are told to stay out** through `robots.txt` and `noindex` tags. That's a polite request, not access control.
-- **Your content ships to the browser.** Slide copy is compiled into the page, so don't put anything in the repo you wouldn't hand the viewer. If your fork is public, your deck copy is public too.
+- **Your repo is your repo.** Slide copy lives in the code, so if your fork is public, your deck copy is public too, passcode or not.
 
-If a deck needs real protection, put it behind your host's access controls (on Vercel, that's Deployment Protection).
+If a deck needs more than a shared code, put it behind your host's access controls (on Vercel, that's Deployment Protection).
 
 ## What's In The Box
 
-No database, no accounts, no API keys, no environment secrets. The one API route, `/api/deck-version`, returns the current build ID and takes no input.
+No database, no accounts and no API keys. The only secret is the optional `DECK_PASSCODE`, which stays on the server. The unlock cookie is `HttpOnly`, `Secure` over HTTPS, and holds a signature rather than the code.

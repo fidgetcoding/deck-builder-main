@@ -2,11 +2,11 @@
 /**
  * Deck to PDF, for the person who insists.
  *
- * Point it at the scroll view. That's the only view that prints as a whole
- * document: the deck view shows one slide at a time, so it prints one page.
+ * Point it at either view. The deck view gives every slide, one to a page, and
+ * the scroll view gives the whole long page.
  *
  * Usage:
- *   node scripts/export-deck-pdf.mjs --url "http://localhost:3000/deck-builder?view=scroll" --out out/deck.pdf
+ *   node scripts/export-deck-pdf.mjs --url "http://localhost:3000/deck-builder?view=deck" --out out/deck.pdf
  *
  * CLI args (all optional except --url):
  *   --url      <string>  Deck URL                                        (required)
@@ -67,7 +67,7 @@ async function main() {
   const url = args.url;
   if (!url) {
     console.error("error: --url is required");
-    console.error("example: node scripts/export-deck-pdf.mjs --url 'http://localhost:3000/deck-builder?view=scroll' --out out/deck.pdf");
+    console.error("example: node scripts/export-deck-pdf.mjs --url 'http://localhost:3000/deck-builder?view=deck' --out out/deck.pdf");
     process.exit(1);
   }
 

@@ -4,6 +4,8 @@
 
 **A deck that's a link, not a file.**
 
+**Try it live: <https://deck-builder-main.vercel.app/deck-builder>**
+
 You send one URL. It opens as a slide deck on a laptop and a long scroll on a phone, and whoever's looking can flip between the two. When you change something and push, every open tab picks it up on its own and stays on the slide it was on. That includes the tab you're sharing on a call.
 
 ## Why I made it
@@ -50,7 +52,11 @@ Push your copy to your own GitHub repo, then import that repo at [vercel.com/new
 
 Vercel's the path I'd take, but anything that can run `npm run build && npm start` will do.
 
-**5. Send the link**
+**5. Lock it, if you want**
+
+The lock is off by default. Add a `DECK_PASSCODE` environment variable in your Vercel project and redeploy, and everyone gets a passcode screen first. To try it locally, run `DECK_PASSCODE=something npm start` after a build.
+
+**6. Send the link**
 
 ```
 https://your-project.vercel.app/deck-builder
@@ -60,22 +66,25 @@ Use your production URL, not a one-off deployment URL. Those are frozen in time,
 
 You can also point people straight at a spot: `?view=scroll` opens the scroll view and `?view=deck#4` opens slide 4.
 
-**6. Push updates, even mid-call**
+**7. Push updates, even mid-call**
 
 ```bash
 git commit -am "fix the number on slide 4"
 git push
 ```
 
-Vercel builds it. Once the new version's live, every open tab notices within about 15 seconds, reloads itself, and lands back on the same slide or scroll position. Nobody has to refresh anything.
+Vercel builds it, and every open tab picks it up on its own and lands back on the same slide or scroll position. Nobody has to refresh anything.
 
-Be honest with yourself about the timing: the update takes your build time plus up to 15 seconds, so it's "give me a minute," not instant. It's also a real page reload, so viewers see a quick flash and the slide fades back in.
+I timed this on the live demo: 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes. From `git push` to the edit on screen took 22 to 30 seconds, with a median of 24, and about 20 of those seconds are Vercel building. So it's "give me half a minute," not instant, and a bigger deck will take longer.
+
+It's still a page reload under the hood, because a new build means new code, but it doesn't look like one. The server renders the new page already on your slide at full strength, and the browser holds the old frame until it's ready, so the only thing that changes on screen is your edit.
 
 ## What's in it
 
 - **Two views, one URL.** Laptops open on the deck, phones open on the scroll, and a toggle flips between them.
-- **Live updates.** Open tabs check for a new build every 15 seconds and reload in place. They won't do it while someone's in the booking modal or watching a video with the sound on, and they try again once that's done. Hidden tabs stop checking until they're looked at again. If a check fails mid-deploy, nothing happens and it tries again.
-- **Deck navigation.** Arrow keys, Page Up and Down, Home and End, trackpad or mouse wheel, swipe, a numbered section bar, and a slide tray (press the up arrow). The on-screen arrows on desktop advance when you hover over them, no click needed.
+- **Live updates.** Open tabs check for a new build every 5 seconds and reload in place, without a flash. They won't do it while someone's in the booking modal or watching a video with the sound on, and they try again once that's done. Hidden tabs stop checking until they're looked at again. If a check fails mid-deploy, or the server's still handing out the old page, nothing happens and they try again.
+- **An optional passcode.** Checked on the server for every request, including the JavaScript that holds your slide copy, so nothing leaves without the code.
+- **Deck navigation.** Arrow keys, Page Up and Down, Home and End, trackpad or mouse wheel, swipe, a numbered section bar, and a slide tray (press the up arrow). The on-screen arrows on desktop advance when you hover over them, no click needed. On a small screen, a long slide scrolls inside itself.
 - **Twelve starter slides.** Cover, ten layouts (text and image, three pillars, a big statement, pricing tiers, full bleed and so on) and a next steps slide.
 - **A scroll view with some manners.** Contents list, a letter up top, video and image sections, and a call to action at the bottom.
 - **A booking modal.** Your scheduling link opens inside the deck, so nobody has to leave it.
@@ -84,23 +93,23 @@ Be honest with yourself about the timing: the update takes your build time plus 
 
 ## Good to know
 
-- **The link is the only lock.** No password, no login. Anyone who has the URL can read the deck, and "Confidential" on a slide is just a word. See [SECURITY.md](SECURITY.md).
-- **Phones want the scroll view.** That's why it's the default. Deck view on a phone cuts off the longer slides.
-- **Printing:** if somebody really needs a PDF, the scroll view prints the whole thing. With the app running, `npm run pdf:export -- --url "http://localhost:3000/deck-builder?view=scroll"` writes `out/deck.pdf` (run `npx playwright install chromium` once first). The deck view only prints the slide you're on. Sorry, not sorry.
+- **Without a passcode, the link is the only lock.** Anyone who has the URL can read the deck, and "Confidential" on a slide is just a word. With one, it's still a single shared code, with no accounts and no lockout, just a half-second wait after a wrong guess, so make it long. See [SECURITY.md](SECURITY.md).
+- **Phones start on the scroll view.** It reads better on a small screen, but deck view works too, and nothing gets cut off.
+- **Printing:** if somebody really needs a PDF, either view gives you the whole thing. The deck view prints every slide, one to a page, wherever you were. With the app running, `npm run pdf:export -- --url "http://localhost:3000/deck-builder?view=deck"` writes `out/deck.pdf` (run `npx playwright install chromium` once first). Pages are 1920 by 1080, so a slide taller than that gets cut off on paper. I've only checked the PDF output in Chromium.
 - **Analytics:** Vercel Analytics is wired in. Turn it on in your Vercel project, or delete `<Analytics />` from `src/app/layout.tsx`. Until then you'll see a harmless 404 for its script in the console.
-- **Polling:** each open tab makes one tiny request every 15 seconds, so a deck someone leaves open all day does count against your host's usage. To change the pace, edit `POLL_MS` in `src/components/DeckUpdateWatcher.tsx`.
-- **Vercel Skew Protection:** it's off by default, and I haven't tested live updates with it on. It pins open tabs to the deployment they loaded from, so try it before you trust it mid-call.
+- **Polling:** each open tab makes one tiny request every 5 seconds. The CDN answers it from a file made at build time, so it doesn't wake a function, but it still counts as a request: about 17,000 a day for a tab left open and visible all day. To change the pace, edit `POLL_MS` in `src/components/DeckUpdateWatcher.tsx`.
+- **Vercel Skew Protection:** it's on by default for new projects on Vercel's Pro plan, and all my timings above ran with it on. It doesn't get in the way, because it leaves full page loads and plain `fetch()` calls going to the newest deployment.
+- **What I haven't tried:** real phones and Safari itself. The tests use Playwright's browser engines, and in WebKit a few reloads showed a one-frame blip under 1% of the screen.
 
 ## Tests
 
 ```bash
 npm run lint
-npm run build
 npx playwright install chromium   # once
-npm run test:e2e
+npm run test:e2e                  # builds first, then tests the real build
 ```
 
-Port 3000 taken? Run `PORT=3457 npm run test:e2e`.
+Ports 3000 and 3001 taken? Run `PORT=3457 npm run test:e2e`.
 
 ## More
 
