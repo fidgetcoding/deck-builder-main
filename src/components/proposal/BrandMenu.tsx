@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type PointerEvent } from "react";
 import ContactModalTrigger from "@/components/shared/ContactModalTrigger";
 import type { BrandConfig } from "./brands";
 
@@ -12,12 +12,15 @@ interface Props {
 export default function BrandMenu({ brand, chromeVariant = "circle" }: Props) {
   const [open, setOpen] = useState(false);
   const openedAt = useRef(0);
-  const handleOpen = () => {
+  // Hover is for a real mouse only. A tap also fires fake hover events, and racing
+  // those against the click could close the menu the tap just opened.
+  const handleOpen = (e: PointerEvent) => {
+    if (e.pointerType !== "mouse") return;
     setOpen(true);
     openedAt.current = Date.now();
   };
-  const handleHoverClose = () => {
-    if (open && Date.now() - openedAt.current > 200) setOpen(false);
+  const handleLeave = (e: PointerEvent) => {
+    if (e.pointerType === "mouse") setOpen(false);
   };
   const isRect = chromeVariant === "rounded-rect";
   const navShape = isRect ? "rounded-[10px]" : "rounded-full";
@@ -29,8 +32,8 @@ export default function BrandMenu({ brand, chromeVariant = "circle" }: Props) {
   return (
     <div
       className={containerPos}
-      onMouseEnter={handleOpen}
-      onMouseLeave={() => setOpen(false)}
+      onPointerEnter={handleOpen}
+      onPointerLeave={handleLeave}
     >
       <div
         className={`flex items-center gap-3 sm:gap-5 md:gap-7 transition-opacity duration-200 ${
@@ -48,11 +51,10 @@ export default function BrandMenu({ brand, chromeVariant = "circle" }: Props) {
       <button
         type="button"
         onClick={() => {
-          // A tap fires a fake hover and then a click. Don't let the click undo the hover.
+          // Hovering opened it a moment ago, so a click on the way in shouldn't undo that.
           if (Date.now() - openedAt.current < 400) return;
           setOpen((v) => !v);
         }}
-        onMouseEnter={handleHoverClose}
         aria-expanded={open}
         aria-label={open ? "Close menu" : "Open menu"}
         className={`flex items-center justify-center ${burgerSize} ${navShape} backdrop-blur transition-colors focus:outline-none`}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type PointerEvent } from "react";
 import type { SlideMeta } from "./slideTypes";
 import { useBrand } from "@/components/BrandContext";
 import ContactModalTrigger from "@/components/shared/ContactModalTrigger";
@@ -39,6 +39,22 @@ export default function DeckChrome({
   const sections = slides.flatMap((slide, firstSlideIndex) =>
     slide.section ? [{ id: slide.section, label: slide.section, firstSlideIndex }] : [],
   );
+  // Hover is for a real mouse only. A tap also fires fake hover events, and racing
+  // those against the click could close a menu the tap just opened.
+  const hoveredOpenAt = useRef(0);
+  const hoverOpenBurger = (e: PointerEvent) => {
+    if (e.pointerType !== "mouse") return;
+    hoveredOpenAt.current = Date.now();
+    setBurgerOpen(true);
+  };
+  const hoverCloseBurger = (e: PointerEvent) => {
+    if (e.pointerType === "mouse") setBurgerOpen(false);
+  };
+  const clickBurger = () => {
+    // Hovering opened it a moment ago, so a click on the way in shouldn't undo that.
+    if (Date.now() - hoveredOpenAt.current < 400) return;
+    setBurgerOpen(!burgerOpen);
+  };
   const isRect = chromeVariant === "rounded-rect";
   // Size-proportional radii (~25% of side) for clear rounded-square look on every button
   const burgerShape = isRect ? "rounded-[10px]" : "rounded-full";   // 40x40
@@ -88,7 +104,7 @@ export default function DeckChrome({
 
           <div
             className="relative flex-1 min-w-0 flex justify-end items-center pl-4"
-            onMouseLeave={() => setBurgerOpen(false)}
+            onPointerLeave={hoverCloseBurger}
           >
             <div
               className={`flex items-center gap-3 sm:gap-5 md:gap-7 overflow-x-auto no-scrollbar transition-opacity duration-200 ${
@@ -117,7 +133,7 @@ export default function DeckChrome({
                 burgerOpen ? "opacity-100" : "opacity-0 pointer-events-none"
               }`}
               aria-hidden={!burgerOpen}
-              onMouseEnter={() => setBurgerOpen(true)}
+              onPointerEnter={hoverOpenBurger}
             >
               <ContactModalTrigger className="shrink-0 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.18em] py-1 text-white/80 hover:text-white transition-colors focus:outline-none cursor-pointer">
                 Contact
@@ -127,8 +143,8 @@ export default function DeckChrome({
 
           <button
             type="button"
-            onMouseEnter={() => setBurgerOpen(true)}
-            onClick={() => setBurgerOpen(!burgerOpen)}
+            onPointerEnter={hoverOpenBurger}
+            onClick={clickBurger}
             aria-expanded={burgerOpen}
             aria-label={burgerOpen ? "Close menu" : "Open menu"}
             className={`ml-3 sm:ml-4 shrink-0 flex items-center justify-center w-10 h-10 ${burgerShape} bg-white/0 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-colors focus:outline-none`}
@@ -158,8 +174,8 @@ export default function DeckChrome({
       {isCover && (
         <div
           className="absolute top-3 right-4 sm:right-6 z-40 flex items-center gap-3 sm:gap-5 md:gap-7"
-          onMouseEnter={() => setBurgerOpen(true)}
-          onMouseLeave={() => setBurgerOpen(false)}
+          onPointerEnter={hoverOpenBurger}
+          onPointerLeave={hoverCloseBurger}
         >
           <div
             className={`flex items-center gap-3 sm:gap-5 md:gap-7 transition-opacity duration-200 ${
@@ -174,7 +190,7 @@ export default function DeckChrome({
 
           <button
             type="button"
-            onClick={() => setBurgerOpen(!burgerOpen)}
+            onClick={clickBurger}
             aria-expanded={burgerOpen}
             aria-label={burgerOpen ? "Close menu" : "Open menu"}
             className={`flex items-center justify-center w-10 h-10 ${burgerShape} bg-[#0a0a0a]/70 backdrop-blur border border-white/10 hover:bg-white/10 hover:border-white/20 transition-colors focus:outline-none`}
@@ -276,7 +292,7 @@ export default function DeckChrome({
       <div className="hidden sm:flex absolute bottom-4 right-5 z-30 items-center gap-3">
         <button
           type="button"
-          onMouseEnter={() => setFilmstripOpen(true)}
+          onPointerEnter={(e) => { if (e.pointerType === "mouse") setFilmstripOpen(true); }}
           onClick={() => setFilmstripOpen(!filmstripOpen)}
           aria-expanded={filmstripOpen}
           aria-label={filmstripOpen ? "Close slide tray" : "Open slide tray"}
@@ -301,7 +317,7 @@ export default function DeckChrome({
         <button
           type="button"
           onClick={() => setFilmstripOpen(false)}
-          onMouseEnter={() => setFilmstripOpen(false)}
+          onPointerEnter={(e) => { if (e.pointerType === "mouse") setFilmstripOpen(false); }}
           aria-label="Close slide tray"
           className={`absolute top-2 right-3 z-10 flex items-center justify-center w-8 h-8 ${filmstripCloseShape} border border-white/20 bg-[#0a0a0a]/80 text-white transition-colors focus:outline-none`}
         >
