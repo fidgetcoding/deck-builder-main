@@ -240,16 +240,19 @@ test.describe("deck view on small screens", () => {
       const slide = page.locator('[aria-hidden="false"] section');
       await expect(slide).toBeVisible();
       const cdp = await page.context().newCDPSession(page);
-      // A synthetic gesture can land before the compositor is ready, so give it a few goes.
-      await expect(async () => {
-        await cdp.send("Input.synthesizeScrollGesture", {
-          x: 195,
-          y: 500,
-          yDistance: -300,
-          gestureSourceType: "touch",
+      // Raw touch events, so the deck's own touchend handler sees the swipe too.
+      const touch = (type: "touchStart" | "touchMove" | "touchEnd", y = 0) =>
+        cdp.send("Input.dispatchTouchEvent", {
+          type,
+          touchPoints: type === "touchEnd" ? [] : [{ x: 195, y }],
         });
-        expect(await slide.evaluate((el) => el.scrollTop)).toBeGreaterThan(100);
-      }).toPass({ timeout: 10_000 });
+      await touch("touchStart", 600);
+      for (let y = 590; y >= 200; y -= 10) {
+        await touch("touchMove", y);
+        await page.waitForTimeout(16);
+      }
+      await touch("touchEnd");
+      await expect.poll(() => slide.evaluate((el) => el.scrollTop)).toBeGreaterThan(100);
       await expect(page.getByRole("button", { name: "Toggle slide tray" })).toHaveAttribute("aria-expanded", "false");
     });
   });
