@@ -42,7 +42,9 @@ test.describe("two views, one link", () => {
   });
 
   test("the contact modal opens from the deck's top bar", async ({ page }) => {
+    const deploy = await fakeDeployments(page);
     await page.goto("/deck-builder?view=deck#3");
+    await expect.poll(() => deploy.polls).toBeGreaterThan(0); // hydrated: the burger has its click handler
     await page.getByRole("button", { name: "Open menu" }).click();
     await page.getByRole("button", { name: "Contact" }).click();
     const dialog = page.getByRole("dialog");
