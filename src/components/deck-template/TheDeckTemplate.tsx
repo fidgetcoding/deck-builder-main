@@ -54,16 +54,19 @@ export default function TheDeckTemplate({ slides, onSlideChange, initialSlideIdx
     [total],
   );
 
+  // The slide a #N hash asked for, until it lands. Writing the hash before then would
+  // overwrite a deep link with the slide we happened to start on.
+  const hashTarget = useRef<number | null>(null);
+
   useEffect(() => {
     const fromHash = () => {
       const m = window.location.hash.match(/^#(\d+)$/);
       if (m) {
         const target = parseInt(m[1], 10) - 1;
         if (Number.isFinite(target)) {
-          setCurrent((cur) => {
-            const next = Math.max(0, Math.min(total - 1, target));
-            return next === cur ? cur : next;
-          });
+          const next = Math.max(0, Math.min(total - 1, target));
+          hashTarget.current = next;
+          setCurrent(next);
         }
       }
     };
@@ -73,6 +76,8 @@ export default function TheDeckTemplate({ slides, onSlideChange, initialSlideIdx
   }, [total]);
 
   useEffect(() => {
+    if (hashTarget.current !== null && hashTarget.current !== current) return;
+    hashTarget.current = null;
     const desired = `#${current + 1}`;
     if (typeof window !== "undefined" && window.location.hash !== desired) {
       window.history.replaceState(null, "", desired);

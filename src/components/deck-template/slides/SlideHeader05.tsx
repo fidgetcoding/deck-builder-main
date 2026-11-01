@@ -26,8 +26,8 @@ export default function SlideHeader05() {
             className="relative aspect-[16/7] rounded-2xl overflow-hidden flex items-center justify-center mb-8"
             style={{
               background:
-                "repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 12px, rgba(0,150,46,0.05) 12px 24px)",
-              border: `1px dashed ${ACCENT}66`,
+                `repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 12px, color-mix(in srgb, ${ACCENT} 5%, transparent) 12px 24px)`,
+              border: `1px dashed color-mix(in srgb, ${ACCENT} 40%, transparent)`,
             }}
           >
             <span className="text-white/30 text-xs font-bold uppercase tracking-[0.3em]">
@@ -42,8 +42,8 @@ export default function SlideHeader05() {
               <div
                 className="rounded-xl p-4 sm:p-5 h-full"
                 style={{
-                  border: `1px solid ${ACCENT}55`,
-                  background: `${ACCENT}0d`,
+                  border: `1px solid color-mix(in srgb, ${ACCENT} 33.3%, transparent)`,
+                  background: `color-mix(in srgb, ${ACCENT} 5.1%, transparent)`,
                 }}
               >
                 <p

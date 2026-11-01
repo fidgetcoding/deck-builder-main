@@ -4,7 +4,7 @@ import { brand } from "@/lib/brand";
 const ACCENT = brand.accent;
 
 const placeholderStripes =
-  "repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 12px, rgba(0,150,46,0.05) 12px 24px)";
+  `repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 12px, color-mix(in srgb, ${ACCENT} 5%, transparent) 12px 24px)`;
 
 export default function SlideHeader10() {
   return (
@@ -29,7 +29,7 @@ export default function SlideHeader10() {
             className="relative w-full h-full rounded-2xl overflow-hidden flex items-center justify-center"
             style={{
               background: placeholderStripes,
-              border: `1px dashed ${ACCENT}66`,
+              border: `1px dashed color-mix(in srgb, ${ACCENT} 40%, transparent)`,
               minHeight: "min(50vh, 480px)",
             }}
           >

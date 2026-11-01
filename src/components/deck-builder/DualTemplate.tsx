@@ -131,7 +131,7 @@ export default function DualTemplate({
       if (target === "top") {
         window.scrollTo({ top: 0, behavior: "auto" });
       } else {
-        const el = document.getElementById(PROPOSAL_FIRST_SECTION_ID);
+        const el = document.getElementById(PROPOSAL_FIRST_SECTION_ID) ?? document.getElementById("contents");
         if (el) el.scrollIntoView({ behavior: "auto", block: "start" });
         else window.scrollTo({ top: window.innerHeight, behavior: "auto" });
       }

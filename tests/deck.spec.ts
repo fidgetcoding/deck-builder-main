@@ -1,11 +1,17 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
+import { brand } from "../src/lib/brand";
+import { proposalTemplate } from "../src/components/proposal/brands";
+import { sectionTitle, visibleSections } from "../src/components/proposal/sections";
+import { SLIDES, activeSlide, at, pad, plainTextOnSlide, realOpacity } from "./helpers";
 
 /**
  * Pretend to deploy, by rewriting what the server sends.
  *
  * `live` is what the version check says, `served` is the build the server's pages
- * are stamped with, and setting `version` moves both, like a clean deploy. `subhead`
- * is a copy edit. `newCode` makes the new page ask for a script this tab hasn't
+ * are stamped with, and setting `version` moves both, like a clean deploy. `edit`
+ * is a copy edit, as [old text, new text]. `newCode` makes the new page ask for a script this tab hasn't
  * loaded, which is what a deploy with new JS looks like.
  */
 async function fakeDeployments(page: Page) {
@@ -13,7 +19,7 @@ async function fakeDeployments(page: Page) {
     polls: 0,
     live: "build-1",
     served: "build-1",
-    subhead: "[Subheadline: sed do eiusmod.]",
+    edit: null as [string, string] | null,
     newCode: false,
     set version(next: string) {
       state.live = next;
@@ -29,8 +35,9 @@ async function fakeDeployments(page: Page) {
   );
   await page.route(/\/deck-(builder|template)(\?|#|$)/, async (route) => {
     const res = await route.fetch();
-    let body = (await res.text())
-      .replaceAll("[Subheadline: sed do eiusmod.]", state.subhead)
+    let body = await res.text();
+    if (state.edit) body = body.replaceAll(state.edit[0], state.edit[1]);
+    body = body
       .replace(/data-deck-build="[^"]*"/, `data-deck-build="${state.served}"`)
       .replace(/(\\?"data-deck-build\\?":\\?")[^"\\]*/g, `$1${state.served}`);
     if (state.newCode) {
@@ -41,7 +48,7 @@ async function fakeDeployments(page: Page) {
   return state;
 }
 
-/** Same check the 5 second timer runs, without waiting. */
+/** Same check the timer runs, without waiting. */
 const pollNow = (page: Page) =>
   page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
 
@@ -53,7 +60,7 @@ test.describe("two views, one link", () => {
     await page.keyboard.press("ArrowRight");
     await expect(page).toHaveURL(/#2$/);
     await page.keyboard.press("End");
-    await expect(page).toHaveURL(/#12$/);
+    await expect(page).toHaveURL(new RegExp(`#${SLIDES}$`));
   });
 
   test("phones open on scroll", async ({ page }) => {
@@ -73,8 +80,9 @@ test.describe("two views, one link", () => {
   });
 
   test("the contact modal opens from the deck's top bar", async ({ page }) => {
+    test.skip(!brand.bookingUrl, "no booking link, so Contact is an email link");
     const deploy = await fakeDeployments(page);
-    await page.goto("/deck-builder?view=deck#3");
+    await page.goto(`/deck-builder?view=deck#${at(3)}`);
     await expect.poll(() => deploy.polls).toBeGreaterThan(0); // hydrated: the burger has its click handler
     await page.getByRole("button", { name: "Open menu" }).click();
     await page.getByRole("button", { name: "Contact" }).click();
@@ -94,14 +102,14 @@ test.describe("on a phone", () => {
     await expect(burger).toBeVisible();
     await expect(page.locator("#letter")).toBeAttached();
     await burger.tap();
-    await expect(page.getByRole("button", { name: "Contact", exact: true })).toBeVisible();
+    await expect(page.getByRole(brand.bookingUrl ? "button" : "link", { name: "Contact", exact: true })).toBeVisible();
   });
 
   test("the view toggle doesn't sit on the deck's back button", async ({ page }) => {
-    await page.goto("/deck-builder?view=deck#4");
-    await expect(page).toHaveURL(/#4$/);
+    await page.goto(`/deck-builder?view=deck#${at(4)}`);
+    await expect(page).toHaveURL(new RegExp(`#${at(4)}$`));
     await page.getByRole("button", { name: "Previous slide" }).last().tap();
-    await expect(page).toHaveURL(/#3$/);
+    await expect(page).toHaveURL(new RegExp(`#${at(4) - 1}$`));
   });
 });
 
@@ -111,7 +119,7 @@ test.describe("a copy edit lands in place", () => {
 
   test("no reload: same page, same slide, new words", async ({ page }) => {
     const deploy = await fakeDeployments(page);
-    await page.goto("/deck-builder?view=deck#4");
+    await page.goto(`/deck-builder?view=deck#${at(4)}`);
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
     await page.evaluate(() => {
       (window as unknown as { marker: string }).marker = "still here";
@@ -121,21 +129,24 @@ test.describe("a copy edit lands in place", () => {
       el.setAttribute("data-same-node", "yes");
     });
 
-    deploy.subhead = "New words, no reload.";
+    const original = await plainTextOnSlide(page);
+    test.skip(!original, "this slide has no plain text to edit");
+    deploy.edit = [original!, "New words, no reload."];
     deploy.version = "build-2";
     await pollNow(page);
 
-    await expect(page.getByRole("heading", { name: "New words, no reload." }).first()).toBeVisible();
+    await expect(page.getByText("New words, no reload.").first()).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-2");
     expect(await navType(page)).toBe("navigate");
     expect(await page.evaluate(() => (window as unknown as { marker: string }).marker)).toBe("still here");
     await expect(slide).toHaveAttribute("data-same-node", "yes");
-    await expect(page).toHaveURL(/\/deck-builder\?view=deck#4$/);
+    await expect(page).toHaveURL(new RegExp(`/deck-builder\\?view=deck#${at(4)}$`));
   });
 
   test("an open booking modal and half-typed text survive it", async ({ page }) => {
+    test.skip(!brand.bookingUrl, "no booking link, so no modal");
     const deploy = await fakeDeployments(page);
-    await page.goto("/deck-builder?view=deck#4");
+    await page.goto(`/deck-builder?view=deck#${at(4)}`);
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
     await page.getByRole("button", { name: "Open menu" }).hover();
     await page.getByRole("button", { name: "Contact", exact: true }).click();
@@ -150,12 +161,14 @@ test.describe("a copy edit lands in place", () => {
       input.value = "half a sentence";
     });
 
-    deploy.subhead = "Landed under the modal.";
+    const original = await plainTextOnSlide(page);
+    test.skip(!original, "this slide has no plain text to edit");
+    deploy.edit = [original!, "Landed under the modal."];
     deploy.version = "build-2";
     await pollNow(page);
 
     await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-2");
-    await expect(page.getByRole("heading", { name: "Landed under the modal." }).first()).toBeAttached();
+    await expect(page.getByText("Landed under the modal.").first()).toBeAttached();
     await expect(dialog).toBeVisible();
     expect(
       await page.evaluate(() => {
@@ -187,7 +200,7 @@ test.describe("a copy edit lands in place", () => {
 
   test("a refresh that never lands falls back to a reload instead of staying stale", async ({ page }) => {
     const deploy = await fakeDeployments(page);
-    await page.goto("/deck-builder?view=deck#4");
+    await page.goto(`/deck-builder?view=deck#${at(4)}`);
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
 
     // The version check and the page agree on build-2, but refreshes never deliver it.
@@ -201,7 +214,7 @@ test.describe("a copy edit lands in place", () => {
       expect(await navType(page)).toBe("reload");
     }).toPass({ timeout: 15_000 });
     await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-2");
-    await expect(page).toHaveURL(/#4$/);
+    await expect(page).toHaveURL(new RegExp(`#${at(4)}$`));
   });
 
   test("slide and brand copy isn't in any JS chunk, which is what makes this possible", async ({ page, request }) => {
@@ -209,10 +222,19 @@ test.describe("a copy edit lands in place", () => {
     const html = await (await request.get("/deck-builder?view=deck")).text();
     const chunks = [...new Set(html.match(/\/_next\/static\/[^"\\?]+\.js/g))];
     expect(chunks.length).toBeGreaterThan(0);
-    expect(html).toContain("Section Eyebrow");
+    const copy = [
+      brand.coverHeadline,
+      brand.tagline,
+      brand.contactEmail,
+      brand.signerName,
+      proposalTemplate.letterParagraphs[0],
+      proposalTemplate.closingBody,
+      // The sample deck's slide copy, for as long as it's still there.
+      ...["Section Eyebrow", "Lorem ipsum"].filter((text) => html.includes(text)),
+    ].filter(Boolean);
     for (const chunk of chunks) {
       const body = await (await request.get(chunk)).text();
-      expect(body, chunk).not.toMatch(/Section Eyebrow|Lorem ipsum|Cover headline|Your one-line tagline/);
+      for (const text of copy) expect(body.includes(text), `"${text}" is in ${chunk}`).toBe(false);
     }
   });
 });
@@ -220,13 +242,14 @@ test.describe("a copy edit lands in place", () => {
 test.describe("pushing while someone's watching", () => {
   test("new JS reloads an open deck and it stays on its slide", async ({ page }) => {
     const deploy = await fakeDeployments(page);
-    await page.goto("/deck-builder?view=deck#4");
+    await page.goto(`/deck-builder?view=deck#${at(4)}`);
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
 
     await pollNow(page);
     await page.waitForTimeout(200);
     expect(await page.evaluate(() => performance.getEntriesByType("navigation")[0].toJSON().type)).toBe("navigate");
 
+    const before = await activeSlide(page).textContent();
     deploy.newCode = true;
     deploy.version = "build-2";
     const reloaded = page.waitForEvent("load");
@@ -234,8 +257,8 @@ test.describe("pushing while someone's watching", () => {
     await reloaded;
 
     expect(await page.evaluate(() => performance.getEntriesByType("navigation")[0].toJSON().type)).toBe("reload");
-    await expect(page).toHaveURL(/#4$/);
-    await expect(page.getByText("HEADER 03: Section Eyebrow").first()).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`#${at(4)}$`));
+    await expect.poll(() => activeSlide(page).textContent()).toBe(before);
   });
 
   test("new JS reloads the scroll view and it keeps its view and its place", async ({ page }) => {
@@ -263,8 +286,9 @@ test.describe("pushing while someone's watching", () => {
   });
 
   test("new JS waits until the booking modal closes", async ({ page }) => {
+    test.skip(!brand.bookingUrl, "no booking link, so no modal");
     const deploy = await fakeDeployments(page);
-    await page.goto("/deck-builder?view=deck#3");
+    await page.goto(`/deck-builder?view=deck#${at(3)}`);
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
     await page.getByRole("button", { name: "Open menu" }).click();
     await page.getByRole("button", { name: "Contact" }).click();
@@ -280,12 +304,12 @@ test.describe("pushing while someone's watching", () => {
     const reloaded = page.waitForEvent("load");
     await pollNow(page);
     await reloaded;
-    await expect(page).toHaveURL(/#3$/);
+    await expect(page).toHaveURL(new RegExp(`#${at(3)}$`));
   });
 
   test("it won't reload until the server really serves the new page", async ({ page }) => {
     const deploy = await fakeDeployments(page);
-    await page.goto("/deck-builder?view=deck#5");
+    await page.goto(`/deck-builder?view=deck#${at(5)}`);
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
 
     // Mid-deploy: the version check says new, the page is still the old one.
@@ -301,12 +325,12 @@ test.describe("pushing while someone's watching", () => {
     await pollNow(page);
     await reloaded;
     expect(await navType()).toBe("reload");
-    await expect(page).toHaveURL(/#5$/);
+    await expect(page).toHaveURL(new RegExp(`#${at(5)}$`));
   });
 
   test("a tab that still lands on the old page tries again instead of staying stale", async ({ page }) => {
     const deploy = await fakeDeployments(page);
-    await page.goto("/deck-builder?view=deck#5");
+    await page.goto(`/deck-builder?view=deck#${at(5)}`);
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
 
     // The page load itself gets old HTML, while the version check already says new.
@@ -319,7 +343,7 @@ test.describe("pushing while someone's watching", () => {
       await pollNow(page);
       await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-2", { timeout: 500 });
     }).toPass();
-    await expect(page).toHaveURL(/#5$/);
+    await expect(page).toHaveURL(new RegExp(`#${at(5)}$`));
   });
 
   test("a page's stamp matches the version check, so a clean deck never reloads", async ({ page }) => {
@@ -327,7 +351,7 @@ test.describe("pushing while someone's watching", () => {
     page.on("response", (res) => {
       if (res.url().endsWith("/api/deck-version")) polls++;
     });
-    await page.goto("/deck-builder?view=deck#2");
+    await page.goto(`/deck-builder?view=deck#${at(2)}`);
     await expect.poll(() => polls).toBeGreaterThan(0);
     const stamp = await page.locator("html").getAttribute("data-deck-build");
     const { version } = await (await page.request.get("/api/deck-version")).json();
@@ -339,7 +363,7 @@ test.describe("pushing while someone's watching", () => {
 
   test("a failed check during a deploy doesn't reload anything", async ({ page }) => {
     const deploy = await fakeDeployments(page);
-    await page.goto("/deck-builder?view=deck#5");
+    await page.goto(`/deck-builder?view=deck#${at(5)}`);
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
 
     await page.unroute("**/api/deck-version");
@@ -348,7 +372,7 @@ test.describe("pushing while someone's watching", () => {
     await page.waitForTimeout(300);
 
     expect(await page.evaluate(() => performance.getEntriesByType("navigation")[0].toJSON().type)).toBe("navigate");
-    await expect(page).toHaveURL(/#5$/);
+    await expect(page).toHaveURL(new RegExp(`#${at(5)}$`));
   });
 });
 
@@ -357,38 +381,31 @@ test.describe("an update lands without a flash", () => {
   test.use({ javaScriptEnabled: false });
 
   test("the server paints the resumed slide in place, at full strength", async ({ page }) => {
-    await page.goto("/deck-builder?view=deck&resume=4");
-    const heading = page.getByText("HEADER 03: Section Eyebrow").first();
-    await expect(heading).toBeVisible();
-    const opacity = await heading.evaluate((el) => {
-      let total = 1;
-      for (let node: Element | null = el; node; node = node.parentElement) {
-        total *= Number(getComputedStyle(node).opacity);
-      }
-      return total;
-    });
-    expect(opacity).toBe(1);
-    await expect(page.getByText("04 / 12").first()).toBeAttached();
+    await page.goto(`/deck-builder?view=deck&resume=${at(4)}`);
+    const text = '[aria-hidden="false"] section :is(h2,h3,h4,p)';
+    await expect(page.locator(text).first()).toBeVisible();
+    expect(await realOpacity(page, text)).toBe(1);
+    await expect(page.getByText(`${pad(at(4))} / ${pad(SLIDES)}`).first()).toBeAttached();
   });
 
   test("the server paints the scroll view too, chrome already past the cover", async ({ page }) => {
     await page.goto("/deck-builder?view=scroll&resume=1500");
     await expect(page.locator("#letter")).toBeVisible();
     await expect(page.getByRole("button", { name: "Back to cover" })).toBeVisible();
-    await expect(page.getByText("[Work headline: lorem ipsum dolor sit amet.]")).toHaveCSS("opacity", "1");
+    expect(await realOpacity(page, "#letter p")).toBe(1);
   });
 });
 
 test.describe("resuming", () => {
   test("the URL cleans itself up afterward", async ({ page }) => {
-    await page.goto("/deck-builder?view=deck&resume=4#4");
-    await expect(page).toHaveURL(/\/deck-builder\?view=deck#4$/);
+    await page.goto(`/deck-builder?view=deck&resume=${at(4)}#${at(4)}`);
+    await expect(page).toHaveURL(new RegExp(`/deck-builder\\?view=deck#${at(4)}$`));
   });
 
   test("a garbage resume value is ignored", async ({ page }) => {
     await page.goto("/deck-builder?view=deck&resume=<script>");
     await expect(page.getByRole("button", { name: "Deck view" })).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByRole("heading", { name: "[Headline" })).toHaveCount(0);
+    await expect(page.getByText(`01 / ${pad(SLIDES)}`).first()).toBeAttached();
   });
 });
 
@@ -403,9 +420,9 @@ test.describe("deck view on small screens", () => {
   for (const { name, width, height, top, bottom, coverBottom } of screens) {
     test(`nothing is cut off on a ${name}`, async ({ page }) => {
       await page.setViewportSize({ width, height });
-      for (let n = 1; n <= 12; n++) {
+      for (let n = 1; n <= SLIDES; n++) {
         await page.goto(`/deck-builder?view=deck&resume=${n}#${n}`);
-        await expect(page.getByText(`${String(n).padStart(2, "0")} / 12`).first()).toBeAttached();
+        await expect(page.getByText(`${pad(n)} / ${pad(SLIDES)}`).first()).toBeAttached();
         const problems = await page.evaluate(
           ({ top, bottom }) => {
             const slide = document.querySelector<HTMLElement>('[aria-hidden="false"] section')!;
@@ -436,7 +453,7 @@ test.describe("deck view on small screens", () => {
     test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
 
     test("a swipe scrolls a long slide and leaves the tray alone", async ({ page }) => {
-      await page.goto("/deck-builder?view=deck&resume=4#4");
+      await page.goto(`/deck-builder?view=deck&resume=${at(4)}#${at(4)}`);
       const slide = page.locator('[aria-hidden="false"] section');
       await expect(slide).toBeVisible();
       const cdp = await page.context().newCDPSession(page);
@@ -460,10 +477,10 @@ test.describe("deck view on small screens", () => {
 
 test.describe("printing the deck view", () => {
   test("gives every slide, one to a page, wherever you were", async ({ page }) => {
-    await page.goto("/deck-builder?view=deck#7");
-    await expect(page).toHaveURL(/#7$/);
+    await page.goto(`/deck-builder?view=deck#${at(7)}`);
+    await expect(page).toHaveURL(new RegExp(`#${at(7)}$`));
     const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
-    expect(pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g)?.length).toBe(12);
+    expect(pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g)?.length).toBe(SLIDES);
   });
 
   test("cuts nothing off the page", async ({ page }) => {
@@ -471,7 +488,7 @@ test.describe("printing the deck view", () => {
     await page.goto("/deck-builder?view=deck");
     await page.emulateMedia({ media: "print" });
     const slides = page.locator(".deck-print-slide");
-    await expect(slides).toHaveCount(12);
+    await expect(slides).toHaveCount(SLIDES);
     const clipped = await slides.evaluateAll((all) =>
       all.flatMap((slide, i) => {
         const section = slide.querySelector("section")!;
@@ -482,5 +499,111 @@ test.describe("printing the deck view", () => {
     );
     expect(clipped).toEqual([]);
     await expect(page.getByRole("button", { name: "Deck view" })).toBeHidden();
+  });
+});
+
+test.describe("making it your own", () => {
+  test("a deep link keeps its slide, and nothing overwrites it on the way", async ({ page }) => {
+    await page.addInitScript(() => {
+      const w = window as unknown as { written: string[] };
+      w.written = [];
+      const real = history.replaceState.bind(history);
+      history.replaceState = (state, unused, url) => {
+        if (url) w.written.push(String(url));
+        return real(state, unused, url);
+      };
+    });
+    await page.goto(`/deck-builder?view=deck#${at(4)}`);
+    await expect(page.getByText(`${pad(at(4))} / ${pad(SLIDES)}`).locator("visible=true").first()).toBeVisible();
+    const written = await page.evaluate(() => (window as unknown as { written: string[] }).written);
+    expect(written.filter((url) => /#\d+$/.test(url) && !url.endsWith(`#${at(4)}`))).toEqual([]);
+  });
+
+  test("the tab says who the deck is for, once", async ({ page }) => {
+    await page.goto("/deck-builder");
+    await expect(page).toHaveTitle(`${brand.client} x ${brand.name}`);
+    await page.goto("/deck-template");
+    await expect(page).toHaveTitle(`${brand.client} x ${brand.name}`);
+  });
+
+  test("changing the accent changes every accent", () => {
+    const files = (dir: string): string[] =>
+      readdirSync(dir).flatMap((name) => {
+        const path = join(dir, name);
+        return statSync(path).isDirectory() ? files(path) : [path];
+      });
+    const hardcoded = files("src")
+      .filter((path) => /\.(tsx?|css)$/.test(path) && !path.endsWith("lib/brand.ts"))
+      .flatMap((path) =>
+        readFileSync(path, "utf8")
+          .split("\n")
+          // The token's own default stays. brand.ts overrides it on <html>.
+          .filter((line) => !line.includes("--brand-green-light:"))
+          .filter((line) => /0, ?150, ?46|#00962E|\$\{ACCENT\}[0-9a-f]{2}/i.test(line))
+          .map((line) => `${path}: ${line.trim()}`),
+      );
+    expect(hardcoded).toEqual([]);
+  });
+
+  test("with no booking link, Contact emails you instead of opening an empty modal", async ({ page }) => {
+    await page.route(/\/deck-builder(\?|#|$)/, async (route) => {
+      const res = await route.fetch();
+      const body = (await res.text()).replace(/(\\"bookingUrl\\":\\")[^"\\]*/g, "$1");
+      return route.fulfill({ response: res, body });
+    });
+    await page.goto("/deck-builder?view=scroll");
+    await expect(page.locator("#letter")).toBeAttached();
+    await page.getByRole("button", { name: "Open menu" }).hover();
+    const contact = page.getByRole("link", { name: "Contact", exact: true });
+    await expect(contact).toHaveAttribute("href", `mailto:${brand.contactEmail}`);
+    await expect(page.getByRole("button", { name: "Contact", exact: true })).toHaveCount(0);
+  });
+
+  test("an empty section doesn't render, and titles come from your config", () => {
+    const empty = {
+      name: "x",
+      bg: "#000",
+      fg: "#fff",
+      muted: "#999",
+      letterGreeting: "",
+      letterParagraphs: [],
+      letterSignoff: "",
+      capabilities: [],
+      closingBody: "",
+    };
+    expect(visibleSections(empty)).toEqual([]);
+    expect(visibleSections({ ...empty, capabilities: [{ title: "a", items: [] }] })).toEqual(["capabilities"]);
+    expect(visibleSections({ ...empty, letterGreeting: "Hi" })).toEqual(["letter"]);
+    expect(visibleSections({ ...empty, showBrandsGrid: true })).toEqual([]);
+
+    expect(sectionTitle(empty, "work")).toBe("The Work");
+    expect(sectionTitle({ ...empty, sectionTitles: { work: "Case Studies" } }, "work")).toBe("Case Studies");
+  });
+
+  test("a light scroll view still uses your accent", async ({ page }) => {
+    await page.route(/\/deck-builder(\?|#|$)/, async (route) => {
+      const res = await route.fetch();
+      const body = (await res.text())
+        .replaceAll('data-cover-theme="dark"', 'data-cover-theme="light"')
+        .replace(/(\\"theme\\":\\")dark/g, "$1light");
+      return route.fulfill({ response: res, body });
+    });
+    await page.goto("/deck-builder?view=scroll");
+    const label = page.locator("#letter p.bg-brand-green-light").first();
+    await expect(label).toBeAttached();
+    const [labelColor, accent] = await label.evaluate((el, color) => {
+      const probe = document.createElement("div");
+      probe.style.background = color;
+      document.body.append(probe);
+      return [getComputedStyle(el).backgroundColor, getComputedStyle(probe).backgroundColor];
+    }, brand.accent);
+    expect(labelColor).toBe(accent);
+  });
+
+  test("the scroll view uses the titles from brands.ts", async ({ page }) => {
+    await page.goto("/deck-builder?view=scroll");
+    for (const id of visibleSections(proposalTemplate)) {
+      await expect(page.locator(`#contents a[href="#${id}"]`)).toContainText(sectionTitle(proposalTemplate, id));
+    }
   });
 });

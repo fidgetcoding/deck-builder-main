@@ -7,7 +7,7 @@ import { brand } from "@/lib/brand";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: `${brand.client} x ${brand.name}`,
+  title: { absolute: `${brand.client} x ${brand.name}` },
   robots: { index: false, follow: false },
 };
 

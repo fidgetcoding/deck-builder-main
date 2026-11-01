@@ -6,6 +6,7 @@ import FadeIn from "@/components/helpers/FadeIn";
 import WorkPlayer from "./WorkPlayer";
 import BrandMenu from "./BrandMenu";
 import type { BrandConfig } from "./brands";
+import { sectionTitle, visibleSections } from "./sections";
 
 interface Props {
   brand: BrandConfig;
@@ -80,51 +81,19 @@ export default function BrandProposal({ brand, chromeVariant }: Props) {
   const ctaShape = chromeVariant === "rounded-rect" ? "rounded-[12px]" : "rounded-full";
   const showTOC = chromeVariant === "rounded-rect";
   const placeholder = !!brand.placeholderMode;
-  const showWork = !!(
-    brand.workHeadline ||
-    brand.workBlurb ||
-    brand.caseFilmSrc ||
-    brand.workPresentationImageSrc ||
-    (brand.workTiles && brand.workTiles.length > 0) ||
-    placeholder
-  );
-  const showFiles = !!(
-    brand.filesHeadline ||
-    brand.filesBody ||
-    (brand.deliverables && brand.deliverables.length > 0)
-  );
-  const showMoments = !!(
-    brand.momentsHeadline ||
-    (brand.funMoments && brand.funMoments.length > 0)
-  );
-  const showBrandsGrid = brand.showBrandsGrid !== false;
-  const showSelects = !!(brand.videos && brand.videos.length > 0);
-  const showBonus = !!brand.bonusFilmSrc;
+  const sectionIds = visibleSections(brand);
+  const showLetter = sectionIds.includes("letter");
+  const showWork = sectionIds.includes("work");
+  const showFiles = sectionIds.includes("files");
+  const showMoments = sectionIds.includes("moments");
+  const showBrandsGrid = sectionIds.includes("brands");
+  const showCapabilities = sectionIds.includes("capabilities");
+  const num = (id: (typeof sectionIds)[number]) => String(sectionIds.indexOf(id) + 1).padStart(2, "0");
 
-  const sectionIds: string[] = ["letter"];
-  if (showWork) sectionIds.push("work");
-  if (showFiles) sectionIds.push("files");
-  if (showMoments) sectionIds.push("moments");
-  if (showBrandsGrid) sectionIds.push("brands");
-  sectionIds.push("capabilities");
-  if (showSelects) sectionIds.push("selects");
-  if (showBonus) sectionIds.push("bonus");
-  const num = (id: string) => String(sectionIds.indexOf(id) + 1).padStart(2, "0");
-
-  const tocLabelMap: Record<string, string> = {
-    letter: brand.letterSectionTitle ?? "A Letter From Our Founder",
-    work: "The Work",
-    files: "Final Files",
-    moments: "Memorable Moments",
-    brands: "Our Work",
-    capabilities: "Our Capabilities",
-    selects: brand.videosSectionTitle ?? "Our Selects",
-    bonus: "Bonus Film",
-  };
   const tocItems = sectionIds.map((id) => ({
     id,
     num: num(id),
-    label: tocLabelMap[id] ?? id,
+    label: sectionTitle(brand, id),
   }));
 
   return (
@@ -180,12 +149,13 @@ export default function BrandProposal({ brand, chromeVariant }: Props) {
       )}
 
       {/* ========== 01 LETTER ========== */}
+      {showLetter && (
       <section
         id="letter"
         className="px-5 pt-12 pb-8 sm:px-8 md:pt-16 md:pb-12 scroll-mt-8"
       >
         <div className="mx-auto max-w-prose md:max-w-3xl">
-          <SectionLabel num={num("letter")} title={brand.letterSectionTitle ?? "A Letter From Our Founder"} mb="mb-8" />
+          <SectionLabel num={num("letter")} title={sectionTitle(brand, "letter")} mb="mb-8" />
           <FadeIn delay={100}>
             <p className="text-[15px] sm:text-lg leading-relaxed text-white mb-5 sm:mb-6">
               {brand.letterGreeting}
@@ -210,11 +180,13 @@ export default function BrandProposal({ brand, chromeVariant }: Props) {
         </div>
       </section>
 
+      )}
+
       {/* ========== 02 THE WORK ========== */}
       {showWork && (
         <section id="work" className="px-5 py-8 sm:px-8 md:py-12 scroll-mt-8">
           <div className="mx-auto max-w-5xl">
-            <SectionLabel num={num("work")} title="The Work" mb="mb-4" />
+            <SectionLabel num={num("work")} title={sectionTitle(brand, "work")} mb="mb-4" />
             {brand.workHeadline && (
               <FadeIn delay={100}>
                 <h2 className="text-2xl font-bold leading-tight sm:text-4xl md:text-5xl mb-6 text-white">
@@ -388,7 +360,7 @@ export default function BrandProposal({ brand, chromeVariant }: Props) {
       {showFiles && (
         <section id="files" className="px-5 py-8 sm:px-8 md:py-12 scroll-mt-8">
           <div className="mx-auto max-w-4xl">
-            <SectionLabel num={num("files")} title="Final Files" mb="mb-4" />
+            <SectionLabel num={num("files")} title={sectionTitle(brand, "files")} mb="mb-4" />
             {brand.filesHeadline && (
               <FadeIn delay={100}>
                 <h2 className="text-2xl font-bold leading-tight sm:text-4xl md:text-5xl mb-6 text-white">
@@ -431,7 +403,7 @@ export default function BrandProposal({ brand, chromeVariant }: Props) {
       {showMoments && (
         <section id="moments" className="px-5 py-8 sm:px-8 md:py-12 scroll-mt-8">
           <div className="mx-auto max-w-5xl">
-            <SectionLabel num={num("moments")} title="Memorable Moments" mb="mb-4" />
+            <SectionLabel num={num("moments")} title={sectionTitle(brand, "moments")} mb="mb-4" />
             {brand.momentsHeadline && (
               <FadeIn delay={100}>
                 <h2 className="text-2xl font-bold leading-tight sm:text-4xl md:text-5xl mb-10 text-white">
@@ -467,7 +439,7 @@ export default function BrandProposal({ brand, chromeVariant }: Props) {
       {showBrandsGrid && (
       <section id="brands" className="px-5 py-8 sm:px-8 md:py-12 scroll-mt-8">
         <div className="mx-auto max-w-5xl">
-          <SectionLabel num={num("brands")} title="Our Work" mb="mb-4" />
+          <SectionLabel num={num("brands")} title={sectionTitle(brand, "brands")} mb="mb-4" />
           <FadeIn delay={100}>
             <h2 className="text-2xl font-bold leading-tight sm:text-4xl md:text-5xl mb-12 text-white">
               Brands we&apos;ve built for.
@@ -500,9 +472,10 @@ export default function BrandProposal({ brand, chromeVariant }: Props) {
       )}
 
       {/* ========== 07 CAPABILITIES ========== */}
+      {showCapabilities && (
       <section id="capabilities" className="px-5 py-8 sm:px-8 md:py-12 scroll-mt-8">
         <div className="mx-auto max-w-5xl">
-          <SectionLabel num={num("capabilities")} title="Our Capabilities" mb="mb-12" />
+          <SectionLabel num={num("capabilities")} title={sectionTitle(brand, "capabilities")} mb="mb-12" />
 
           <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {brand.capabilities.map((c, i) => (
@@ -528,11 +501,13 @@ export default function BrandProposal({ brand, chromeVariant }: Props) {
         </div>
       </section>
 
+      )}
+
       {/* ========== 08 SELECTS REEL ========== */}
       {brand.videos && brand.videos.length > 0 && (
         <section id="selects" className="py-10 sm:py-12 md:py-16 scroll-mt-8 overflow-hidden">
           <div className="mx-auto max-w-5xl px-5 sm:px-8 mb-8">
-            <SectionLabel num={num("selects")} title={brand.videosSectionTitle ?? "Our Selects"} mb="mb-4" />
+            <SectionLabel num={num("selects")} title={sectionTitle(brand, "selects")} mb="mb-4" />
           </div>
           <div className="px-3 sm:px-6">
             <FadeIn delay={200}>
@@ -548,7 +523,7 @@ export default function BrandProposal({ brand, chromeVariant }: Props) {
       {brand.bonusFilmSrc && (
         <section id="bonus" className="px-5 py-8 sm:px-8 md:py-12 scroll-mt-8">
           <div className="mx-auto max-w-5xl">
-            <SectionLabel num={num("bonus")} title="Bonus Film" mb="mb-4" />
+            <SectionLabel num={num("bonus")} title={sectionTitle(brand, "bonus")} mb="mb-4" />
             <FadeIn delay={100}>
               <h2 className="text-2xl font-bold leading-tight sm:text-4xl mb-6 text-white">
                 Something we made just for you.

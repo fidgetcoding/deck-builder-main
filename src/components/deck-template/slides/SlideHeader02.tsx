@@ -27,8 +27,8 @@ export default function SlideHeader02() {
               <div
                 className="rounded-2xl p-6 sm:p-7 h-full flex flex-col"
                 style={{
-                  border: `1px solid ${ACCENT}55`,
-                  background: `${ACCENT}0d`,
+                  border: `1px solid color-mix(in srgb, ${ACCENT} 33.3%, transparent)`,
+                  background: `color-mix(in srgb, ${ACCENT} 5.1%, transparent)`,
                 }}
               >
                 <p

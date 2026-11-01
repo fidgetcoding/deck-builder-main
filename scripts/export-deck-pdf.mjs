@@ -14,6 +14,7 @@
  *   --width    <px>      Page width in px    (default: 1920)
  *   --height   <px>      Page height in px   (default: 1080)
  *   --wait     <ms>      Settle delay        (default: 1500)
+ *   --passcode <code>    For a locked deck. DECK_PASSCODE works too.
  *   --start-server       Auto-start `next dev` if no server is running   (flag)
  *
  * Requirements: `playwright` installed. The script does not bundle the
@@ -107,6 +108,16 @@ async function main() {
   try {
     console.log(`→ loading ${url}`);
     await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+
+    // A locked deck answers with the passcode form, and that isn't what you want a PDF of.
+    if (new URL(page.url()).pathname === "/unlock") {
+      const passcode = args.passcode ?? process.env.DECK_PASSCODE;
+      if (!passcode) throw new Error("this deck is locked. Set DECK_PASSCODE or pass --passcode <code>.");
+      await page.getByLabel("Passcode").fill(passcode);
+      await page.getByRole("button", { name: "Open" }).click();
+      await page.waitForLoadState("networkidle");
+      if (new URL(page.url()).pathname === "/unlock") throw new Error("that passcode didn't work.");
+    }
 
     // Settle: wait for fonts + any straggler animations
     await page.evaluate(() => document.fonts && document.fonts.ready);

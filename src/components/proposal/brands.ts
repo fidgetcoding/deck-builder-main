@@ -2,11 +2,12 @@
  * Scroll-view content.
  *
  * Everything the long-scroll view renders comes from `proposalTemplate`.
- * Sections with no content don't render, so delete what you don't need.
+ * Any section with no content doesn't render, so delete what you don't need.
  * The deck view's copy lives in src/components/deck-template/slides/.
  */
 
 import { brand } from "@/lib/brand";
+import type { SectionId } from "./sections";
 
 export interface WorkTile {
   title: string;
@@ -35,7 +36,9 @@ export interface BrandConfig {
   fg: string;
   muted: string;
 
-  letterSectionTitle?: string;
+  // The labels on each section. Anything you leave out gets a default.
+  sectionTitles?: Partial<Record<SectionId, string>>;
+
   letterGreeting: string;
   letterParagraphs: string[];
   letterSignoff: string;
@@ -59,7 +62,6 @@ export interface BrandConfig {
   capabilities: Capability[];
 
   videos?: { src: string; label: string }[];
-  videosSectionTitle?: string;
   caseFilmSrc?: string;
   bonusFilmSrc?: string;
 
@@ -70,6 +72,8 @@ export interface BrandConfig {
   closingHeadline?: string;
   closingBody: string;
 
+  // "light" is for the scroll view only, and needs a light bg, a dark fg and a dark
+  // muted to go with it. It uses public/wmark-dark.svg. The deck view stays dark.
   theme?: "light" | "dark";
 
   // Render image/video placeholder boxes for unset media fields.
@@ -92,7 +96,13 @@ export const proposalTemplate: BrandConfig = {
   // Render placeholder boxes for unset media fields
   placeholderMode: true,
 
-  letterSectionTitle: "A Letter",
+  sectionTitles: {
+    letter: "A Letter",
+    work: "The Work",
+    moments: "Memorable Moments",
+    capabilities: "Our Capabilities",
+  },
+
   letterGreeting: `[Greeting: e.g. Hello, ${brand.client} team,]`,
   letterParagraphs: [
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -109,8 +119,6 @@ export const proposalTemplate: BrandConfig = {
   workCaseFilmLabel: "[The case film:]",
   workPresentationImageLabel: "[The presentation image:]",
   downloadZipLabel: "[Download case film + presentation image (.zip)]",
-
-  videosSectionTitle: "Our Selects",
 
   momentsHeadline: "[Moments: stories to be saved.]",
   funMoments: [

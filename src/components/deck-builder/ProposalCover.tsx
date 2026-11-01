@@ -61,12 +61,12 @@ export default function ProposalCover() {
             href="#letter"
             onMouseEnter={() => {
               if (typeof document === "undefined") return;
-              const el = document.getElementById("letter");
+              const el = document.getElementById("letter") ?? document.getElementById("contents");
               if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
             onClick={(e) => {
               e.preventDefault();
-              const el = document.getElementById("letter");
+              const el = document.getElementById("letter") ?? document.getElementById("contents");
               if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
             aria-label="Scroll into the proposal"

@@ -20,6 +20,8 @@ It's a Next.js app and your content is code. There's no editor UI: you (or your 
 
 **1. Clone it and run it**
 
+You need Node 20.9 or newer. Fork the repo on GitHub if you want to keep your deck there, and clone your fork.
+
 ```bash
 git clone https://github.com/fidgetcoding/deck-builder-main.git my-deck
 cd my-deck
@@ -31,9 +33,9 @@ Open <http://localhost:3000/deck-builder>.
 
 **2. Make it yours (don't skip this)**
 
-Open `src/lib/brand.ts`. The sample ships wired to Lorecraft's name, email and booking link, so until you change them your clients will be booking calls with a stranger. Set `name`, `tagline`, `accent`, `contactEmail`, `bookingUrl`, `signerName`, `signerTitle`, `client`, `coverHeadline` and `coverSubtitle`.
+Open `src/lib/brand.ts`. The sample ships wired to Lorecraft's name, email and booking link, so until you change them your clients will be booking calls with a stranger. Set `name`, `tagline`, `accent` (any CSS color), `contactEmail`, `bookingUrl`, `signerName`, `signerTitle`, `client`, `coverHeadline` and `coverSubtitle`. No scheduling page? Leave `bookingUrl` empty and Contact emails you instead.
 
-Then swap your logo into `public/wmark.svg`, plus `public/favicon.png`, `public/favicon.ico`, `public/apple-touch-icon.png` and `public/social.png`.
+Then swap your logo into `public/wmark.svg`, plus `public/favicon.png`, `public/favicon.ico`, `public/apple-touch-icon.png` and `public/social.png`. The logo sits on a dark background.
 
 **3. Write the deck**
 
@@ -46,15 +48,19 @@ The two views are written separately, so edit both:
 
 Each slide is its own `.tsx` file, not a template fill-in, so a slide can look like whatever it needs to. To add, remove or reorder slides, edit `src/components/deck-template/slidesRegistry.tsx`. Keep your words in the slides and in `brands.ts`, because those are what can swap in without the page loading again. A slide that needs a click handler or state should pull in a small `"use client"` component for that part, the way `SlideCover` uses `CoverArrow`. In the scroll view, any section you leave empty doesn't render. To drop the striped placeholder boxes, set `placeholderMode: false`.
 
+The easiest way to add a slide is to copy one that's close, then add a line for it in `slidesRegistry.tsx`. Give it a `section` and it shows up in the top bar, or use `null` to leave it out. Start from an existing slide's outer `<section>`, because its classes are what let a long slide scroll on a phone. The section labels in the scroll view are in `brands.ts` too, under `sectionTitles`.
+
+The tests and CI come along with your copy. They check the product rather than the sample words, so rewriting everything and changing the slide count won't turn them red.
+
 **4. Deploy it**
 
 Push your copy to your own GitHub repo, then import that repo at [vercel.com/new](https://vercel.com/new). No environment variables needed. From then on, every push to `main` deploys.
 
-Vercel's the path I'd take, but anything that can run `npm run build && npm start` will do.
+Vercel's the path I'd take, but anything that can run `npm run build && npm start` will do. Off Vercel, set `NEXT_PUBLIC_SITE_URL` to your address so link previews point at the right place.
 
 **5. Lock it, if you want**
 
-The lock is off by default. Add a `DECK_PASSCODE` environment variable in your Vercel project and redeploy, and everyone gets a passcode screen first. To try it locally, run `DECK_PASSCODE=something npm start` after a build.
+The lock is off by default. Add a `DECK_PASSCODE` environment variable in your Vercel project and redeploy, and everyone gets a passcode screen first. Tabs that are already open go to it too, and come back to the same slide after the code. To turn it off, delete the variable and redeploy. To try it locally, run `DECK_PASSCODE=something npm start` after a build.
 
 **6. Send the link**
 
@@ -97,7 +103,8 @@ The one exception is a push that changes code running in the browser, like an in
 
 - **Without a passcode, the link is the only lock.** Anyone who has the URL can read the deck, and "Confidential" on a slide is just a word. With one, it's still a single shared code, with no accounts and no lockout, just a half-second wait after a wrong guess, so make it long. See [SECURITY.md](SECURITY.md).
 - **Phones start on the scroll view.** It reads better on a small screen, but deck view works too, and nothing gets cut off.
-- **Printing:** if somebody really needs a PDF, either view gives you the whole thing. The deck view prints every slide, one to a page, wherever you were. With the app running, `npm run pdf:export -- --url "http://localhost:3000/deck-builder?view=deck"` writes `out/deck.pdf` (run `npx playwright install chromium` once first). Pages are 1920 by 1080, so a slide taller than that gets cut off on paper. I've only checked the PDF output in Chromium.
+- **Printing:** if somebody really needs a PDF, either view gives you the whole thing. The deck view prints every slide, one to a page, wherever you were. With the app running, `npm run pdf:export -- --url "http://localhost:3000/deck-builder?view=deck"` writes `out/deck.pdf` (run `npx playwright install chromium` once first). On a locked deck, set `DECK_PASSCODE` when you run it. Pages are 1920 by 1080, so a slide taller than that gets cut off on paper. I've only checked the PDF output in Chromium.
+- **Light theme:** set `theme: "light"` in `brands.ts` for a light scroll view, along with light `bg`, dark `fg` and dark `muted`. Only the scroll view changes: the deck view, the top bar and the view toggle stay dark. It uses `public/wmark-dark.svg` for the logo.
 - **Analytics:** Vercel Analytics is wired in. Turn it on in your Vercel project, or delete `<Analytics />` from `src/app/layout.tsx`. Until then you'll see a harmless 404 for its script in the console.
 - **Polling:** each open tab makes one tiny request every 3 seconds. The CDN answers it from a file made at build time, so it doesn't wake a function, but it still counts as a request: about 29,000 a day for a tab left open and visible all day. To change the pace, edit `POLL_MS` in `src/components/DeckUpdateWatcher.tsx`.
 - **Types aren't checked on Vercel:** the typecheck is the one slow build step I could cut, so Vercel skips it and CI runs it on every push. A push with a type error can still go live, so watch CI if you're changing code rather than copy.

@@ -6,8 +6,7 @@
 /* ==========================================================================
    DECK BUILDER: DESIGN TOKEN SYSTEM
    ==========================================================================
-   Palette: deep neutral background + brand greens
-            (light #00962E primary, dark #002014 deep accent)
+   Palette: deep neutral background + the accent from src/lib/brand.ts
    Typography: Outfit (sans) + Geist Mono (mono)
    Density: deck mode: generous whitespace, slide-friendly grid
    Variance: 8: asymmetric, offset compositions
@@ -22,7 +21,6 @@
 :root {
   /* ── Brand Colors (the accent is overridden from src/lib/brand.ts) ── */
   --brand-green-light: #00962E;
-  --brand-green-dark:  #002014;
 
   --black: #000000;
   --white: #FFFFFF;
@@ -43,7 +41,7 @@
   /* ── Accent: brand green-light ── */
   --accent:                var(--brand-green-light);
   --accent-foreground:     #0a0a0a;
-  --accent-muted:          rgba(0, 150, 46, 0.12);
+  --accent-muted:          color-mix(in srgb, var(--brand-green-light) 12%, transparent);
 
   /* ── Surfaces ── */
   --surface:               #121110;
@@ -54,7 +52,7 @@
   --border-strong:         rgba(232, 228, 223, 0.15);
 
   /* ── Ring (focus) ── */
-  --ring:                  rgba(0, 150, 46, 0.4);
+  --ring:                  color-mix(in srgb, var(--brand-green-light) 40%, transparent);
 
   /* ── Destructive ── */
   --destructive:           #c0392b;
@@ -524,7 +522,7 @@ body {
    ========================================================================== */
 
 ::selection {
-  background: rgba(0, 150, 46, 0.25);
+  background: color-mix(in srgb, var(--brand-green-light) 25%, transparent);
   color: var(--foreground);
 }
 
@@ -549,17 +547,17 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 150, 46, 0.2);
+  background: color-mix(in srgb, var(--brand-green-light) 20%, transparent);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 150, 46, 0.35);
+  background: color-mix(in srgb, var(--brand-green-light) 35%, transparent);
 }
 
 @supports (scrollbar-color: auto) {
   * {
-    scrollbar-color: rgba(0, 150, 46, 0.2) transparent;
+    scrollbar-color: color-mix(in srgb, var(--brand-green-light) 20%, transparent) transparent;
     scrollbar-width: thin;
   }
 }
@@ -572,16 +570,16 @@ body {
    These manual classes exist for custom CSS outside of Tailwind utilities.
 */
 
-.bg-accent-5   { background: rgba(0, 150, 46, 0.05); }
-.bg-accent-10  { background: rgba(0, 150, 46, 0.10); }
-.bg-accent-15  { background: rgba(0, 150, 46, 0.15); }
-.bg-accent-20  { background: rgba(0, 150, 46, 0.20); }
+.bg-accent-5   { background: color-mix(in srgb, var(--brand-green-light) 5%, transparent); }
+.bg-accent-10  { background: color-mix(in srgb, var(--brand-green-light) 10%, transparent); }
+.bg-accent-15  { background: color-mix(in srgb, var(--brand-green-light) 15%, transparent); }
+.bg-accent-20  { background: color-mix(in srgb, var(--brand-green-light) 20%, transparent); }
 
-.text-accent-60  { color: rgba(0, 150, 46, 0.60); }
-.text-accent-80  { color: rgba(0, 150, 46, 0.80); }
+.text-accent-60  { color: color-mix(in srgb, var(--brand-green-light) 60%, transparent); }
+.text-accent-80  { color: color-mix(in srgb, var(--brand-green-light) 80%, transparent); }
 
-.border-accent-10 { border-color: rgba(0, 150, 46, 0.10); }
-.border-accent-20 { border-color: rgba(0, 150, 46, 0.20); }
+.border-accent-10 { border-color: color-mix(in srgb, var(--brand-green-light) 10%, transparent); }
+.border-accent-20 { border-color: color-mix(in srgb, var(--brand-green-light) 20%, transparent); }
 
 
 /* ==========================================================================
@@ -668,13 +666,7 @@ body {
    Inverts the dark-on-white defaults baked into the proposal renderer's
    hardcoded Tailwind classes. Scoped strictly to subtrees marked
    data-cover-theme="light"; all other surfaces remain unchanged.
-   The primary brand-green accent is darkened under light theme so accent
-   UI reads as a deeper ink suited to white covers.
    ========================================================================== */
-[data-cover-theme="light"] {
-  --brand-green-light: var(--brand-green-dark);
-  --color-brand-green-light: var(--brand-green-dark);
-}
 [data-cover-theme="light"] .text-white { color: #0a0a0a !important; }
 /* Keep text white when it sits on a brand-green chip (section labels, pills) */
 [data-cover-theme="light"] .text-white.bg-brand-green-light,

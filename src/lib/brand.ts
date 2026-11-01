@@ -11,10 +11,10 @@ export const brand = {
   /** Who's presenting. */
   name: "Lorecraft",
   tagline: "[Your one-line tagline]",
-  /** Hex only: slides append alpha suffixes to it. */
+  /** Any CSS color. */
   accent: "#00962E",
   contactEmail: "hello@lorecraft.io",
-  /** Loaded in an iframe by the Contact modal. */
+  /** Opens inside the deck when someone hits Contact. Leave it empty and Contact emails you instead. */
   bookingUrl: "https://book.morgen.so/lorecraft",
   signerName: "[Your Name]",
   signerTitle: "[Your Title]",

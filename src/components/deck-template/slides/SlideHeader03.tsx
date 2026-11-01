@@ -13,8 +13,8 @@ export default function SlideHeader03() {
               className="relative aspect-[3/4] tall-md:aspect-auto tall-md:h-full rounded-2xl overflow-hidden flex items-center justify-center"
               style={{
                 background:
-                  "repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 12px, rgba(0,150,46,0.05) 12px 24px)",
-                border: `1px dashed ${ACCENT}66`,
+                  `repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 12px, color-mix(in srgb, ${ACCENT} 5%, transparent) 12px 24px)`,
+                border: `1px dashed color-mix(in srgb, ${ACCENT} 40%, transparent)`,
               }}
             >
               <span className="text-white/30 text-xs font-bold uppercase tracking-[0.3em]">

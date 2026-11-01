@@ -63,6 +63,11 @@ const scriptPaths = (root: Document) =>
 /** Fetch the new page. Mid-deploy a server can still hand back the old one, so check. */
 async function fetchNewPage(version: string) {
   const res = await fetch(resumeUrl(), { cache: "no-store" });
+  if (res.redirected && new URL(res.url).pathname === "/unlock") {
+    // The deck got locked, or its passcode changed. Show this viewer the form.
+    window.location.reload();
+    return null;
+  }
   if (!res.ok) return null;
   const doc = new DOMParser().parseFromString(await res.text(), "text/html");
   return doc.documentElement.dataset.deckBuild === version ? doc : null;

@@ -32,7 +32,7 @@ export default function SlideHeader06() {
                 className="rounded-2xl p-6 sm:p-7 h-full flex flex-col"
                 style={{
                   border: opt.featured ? `2px solid ${ACCENT}` : "1px solid rgba(255,255,255,0.1)",
-                  background: opt.featured ? `${ACCENT}10` : "transparent",
+                  background: opt.featured ? `color-mix(in srgb, ${ACCENT} 6.3%, transparent)` : "transparent",
                 }}
               >
                 <p
