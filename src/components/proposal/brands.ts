@@ -112,7 +112,7 @@ export const proposalTemplate: BrandConfig = {
 
   videosSectionTitle: "Our Selects",
 
-  momentsHeadline: "[Moments: stories to be saved.]",
+  momentsHeadline: "[Moments: updated, run one.]",
   funMoments: [
     {
       label: "[“Quotable line.”]",
