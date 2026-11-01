@@ -120,12 +120,19 @@ test.describe("with DECK_PASSCODE set", () => {
       polls++;
       return route.fulfill({ json: { version } });
     });
-    await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+    await context.route(/\/deck-builder(\?|#|$)/, async (route) => {
+      const res = await route.fetch();
+      const body = (await res.text()).replace(/data-deck-build="[^"]*"/, `data-deck-build="${version}"`);
+      return route.fulfill({ response: res, body });
+    });
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-1");
     await expect.poll(() => polls).toBeGreaterThan(0);
     version = "build-2";
     const reloaded = page.waitForEvent("load");
     await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
     await reloaded;
+    await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-2");
     await expect(page).toHaveURL(/\?view=deck#4$/);
     await expect(page.getByText("HEADER 03: Section Eyebrow").first()).toBeVisible();
   });

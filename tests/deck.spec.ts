@@ -1,16 +1,32 @@
 import { expect, test, type Page } from "@playwright/test";
 
-/** Serve a version we control, and report how many times the page has asked. */
+/**
+ * Pretend to deploy. `version` is what the version check says is live, and `page`
+ * is the build the server's HTML is stamped with. Moving both is a clean deploy.
+ */
 async function fakeDeployments(page: Page) {
-  const state = { version: "build-1", polls: 0 };
+  const state = {
+    polls: 0,
+    live: "build-1",
+    served: "build-1",
+    set version(next: string) {
+      state.live = next;
+      state.served = next;
+    },
+  };
   await page.route("**/api/deck-version", (route) => {
     state.polls++;
-    return route.fulfill({ json: { version: state.version } });
+    return route.fulfill({ json: { version: state.live } });
+  });
+  await page.route(/\/deck-(builder|template)(\?|#|$)/, async (route) => {
+    const res = await route.fetch();
+    const body = (await res.text()).replace(/data-deck-build="[^"]*"/, `data-deck-build="${state.served}"`);
+    return route.fulfill({ response: res, body });
   });
   return state;
 }
 
-/** Same check the 15 second timer runs, without waiting 15 seconds. */
+/** Same check the 5 second timer runs, without waiting. */
 const pollNow = (page: Page) =>
   page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
 
@@ -135,6 +151,59 @@ test.describe("pushing while someone's watching", () => {
     await pollNow(page);
     await reloaded;
     await expect(page).toHaveURL(/#3$/);
+  });
+
+  test("it won't reload until the server really serves the new page", async ({ page }) => {
+    const deploy = await fakeDeployments(page);
+    await page.goto("/deck-builder?view=deck#5");
+    await expect.poll(() => deploy.polls).toBeGreaterThan(0);
+
+    // Mid-deploy: the version check says new, the page is still the old one.
+    deploy.live = "build-2";
+    await pollNow(page);
+    await page.waitForTimeout(400);
+    const navType = () => page.evaluate(() => performance.getEntriesByType("navigation")[0].toJSON().type);
+    expect(await navType()).toBe("navigate");
+
+    deploy.served = "build-2";
+    const reloaded = page.waitForEvent("load");
+    await pollNow(page);
+    await reloaded;
+    expect(await navType()).toBe("reload");
+    await expect(page).toHaveURL(/#5$/);
+  });
+
+  test("a tab that still lands on the old page tries again instead of staying stale", async ({ page }) => {
+    const deploy = await fakeDeployments(page);
+    await page.goto("/deck-builder?view=deck#5");
+    await expect.poll(() => deploy.polls).toBeGreaterThan(0);
+
+    // The page load itself gets old HTML, while the version check already says new.
+    deploy.live = "build-2";
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-1");
+
+    deploy.served = "build-2";
+    await expect(async () => {
+      await pollNow(page);
+      await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-2", { timeout: 500 });
+    }).toPass();
+    await expect(page).toHaveURL(/#5$/);
+  });
+
+  test("a page's stamp matches the version check, so a clean deck never reloads", async ({ page }) => {
+    let polls = 0;
+    page.on("response", (res) => {
+      if (res.url().endsWith("/api/deck-version")) polls++;
+    });
+    await page.goto("/deck-builder?view=deck#2");
+    await expect.poll(() => polls).toBeGreaterThan(0);
+    const stamp = await page.locator("html").getAttribute("data-deck-build");
+    const { version } = await (await page.request.get("/api/deck-version")).json();
+    expect(stamp).toBe(version);
+    await pollNow(page);
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(() => performance.getEntriesByType("navigation")[0].toJSON().type)).toBe("navigate");
   });
 
   test("a failed check during a deploy doesn't reload anything", async ({ page }) => {

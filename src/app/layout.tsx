@@ -69,6 +69,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-deck-build={process.env.DECK_BUILD_ID}
       className={`${geistMono.variable} ${outfit.variable} h-full antialiased`}
       style={{ "--brand-green-light": brand.accent } as React.CSSProperties}
     >

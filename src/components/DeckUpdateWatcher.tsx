@@ -54,12 +54,14 @@ function resumeUrl() {
 
 /**
  * Load the new build before leaving the old one, so the reload has nothing to
- * wait for. Returns false if the new build isn't answering yet.
+ * wait for. Mid-deploy, a server can say there's a new build and still hand back
+ * the old page, so this returns false until the page itself is the new one.
  */
-async function warm(url: URL) {
+async function warm(url: URL, version: string) {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) return false;
   const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+  if (doc.documentElement.dataset.deckBuild !== version) return false;
   const assets = Array.from(
     doc.querySelectorAll<HTMLScriptElement | HTMLLinkElement>(
       'script[src], link[rel="stylesheet"], link[rel="preload"]',
@@ -77,33 +79,30 @@ async function warm(url: URL) {
  * Keeps an open deck current. A push builds a new deployment, but a tab that's
  * already open is still running the old bundle, so it would never see the edit.
  *
- * This remembers the version it first saw and reloads when that changes. Comparing
- * against the first answer (rather than a value baked into the bundle) means a
- * reload can't loop. It's still a reload, because a new build means new code, but
- * the server renders the new page already on the right slide or scroll position
- * and the browser holds the old frame until it's ready, so only the edit changes.
+ * Every page is stamped with the build that rendered it, and this compares that
+ * stamp to the live build. A page that came back stale still reads as stale, so
+ * it tries again rather than sitting on old copy forever.
+ *
+ * It's still a reload, because a new build means new code, but the server renders
+ * the new page already on the right slide or scroll position and the browser holds
+ * the old frame until it's ready, so only the edit changes.
  */
 export default function DeckUpdateWatcher() {
   useEffect(() => {
     finishResume();
 
-    let baseline: string | null = null;
-    let updateWaiting = false;
+    const rendered = document.documentElement.dataset.deckBuild;
     let checking = false;
 
     const check = async () => {
       if (checking || document.visibilityState === "hidden") return;
       checking = true;
       try {
-        if (!updateWaiting) {
-          const res = await fetch("/api/deck-version", { cache: "no-store" });
-          if (!res.ok) return;
-          const { version } = (await res.json()) as { version: string };
-          if (baseline === null) baseline = version;
-          else if (version !== baseline) updateWaiting = true;
-        }
-        if (!updateWaiting || viewerIsBusy()) return;
-        if (!(await warm(resumeUrl())) || viewerIsBusy()) return;
+        const res = await fetch("/api/deck-version", { cache: "no-store" });
+        if (!res.ok) return;
+        const { version } = (await res.json()) as { version: string };
+        if (version === rendered || viewerIsBusy()) return;
+        if (!(await warm(resumeUrl(), version)) || viewerIsBusy()) return;
 
         // Read the spot again: they may have moved on while the new build warmed up.
         window.history.replaceState(window.history.state, "", resumeUrl());
