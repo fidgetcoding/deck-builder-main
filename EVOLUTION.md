@@ -2,7 +2,7 @@
 
 ## Short version
 
-A deck should be a link, and the link should be able to change while people are looking at it. That's the whole idea. This repo started with fresh history on 2026-11-01, so what's here is the product's story from that day on, commit by commit. I built those rounds with Claude Code. The first public version checked for updates every 15 seconds, flashed when one landed, cut off long slides on a phone and printed one slide at a time. Then I timed it on a real deploy, which turned up a bug the tests couldn't see. By the end of the day an update showed up about 24 seconds after a push, on the slide you were already on.
+A deck should be a link, and the link should be able to change while people are looking at it. That's the whole idea. This repo started with fresh history on 2026-11-01, so what's here is the product's story from that day on, commit by commit. I built those rounds with Claude Code. The first public version checked for updates every 15 seconds, flashed when one landed, cut off long slides on a phone and printed one slide at a time. Then I timed it on a real deploy, which turned up a bug the tests couldn't see. The last round got me what I wanted: by the end of the day an update landed on open tabs without a reload, about 22 seconds after a push, right where the viewer was. The one exception is a push that changes code running in the browser, which still loads the page again.
 
 ## Origin, in my words
 
@@ -29,6 +29,12 @@ Every date is 2026-11-01. Times are Gulf Standard Time.
 | 17:12 | `38cbe97` | An open tab can't get stuck on an old build |
 | 17:15 | `68301f3` | Timed again on the fixed build |
 | 17:32 | `25994dc` | README documents the lock, the measured time and the live demo |
+| 17:46 | `850cee6` | Content updates swap in place, with no reload |
+| 17:54 | `24af99d` | Vercel builds skip the typecheck, and a removed slide can't break an open tab |
+| 17:58 | `0b8583b` | README says which pushes land in place and which one loads the page |
+| 18:03 | `1c38b17` | Menu hover responds to a real mouse only |
+| 18:08 | `96e9918` | Timed in-place updates on the live demo |
+| 18:12 | `fa9a19a` | README gets the measured in-place time |
 
 ## Round by round
 
@@ -51,18 +57,29 @@ Tested: real pushes to the live demo, with tabs open and watching. This is the t
 Broke: one tab landed back on the old page and stayed there, because it trusted the first version it was told.
 Fixed: `38cbe97`. Pages now carry the build that rendered them, a tab compares that to the live build, and it only moves once the server is really serving the new page.
 Then: timed again on the fixed build (`68301f3`, `083e2b5`), and put the sample copy back (`5e59250`).
+What came next: the update still loaded the page. I wanted it to land without a reload.
+
+**Round 4: no reload (`850cee6`).**
+Built: slide copy and brand values now render on the server, so a copy edit changes no browser JavaScript. An open tab fetches the new page and, if it needs no script the tab hasn't already loaded, swaps the content in where the viewer is. Tabs check every 3 seconds.
+The exception: a push that changes browser JavaScript still loads the page again, because an open tab can't swap its own code. It waits until nobody's in the booking modal or watching a video with the sound on, and it keeps your place. `0b8583b` says so in the README.
+Broke: the typecheck was slowing Vercel builds, and a removed slide could trip up an open tab. Fixed in `24af99d`, with CI still running the typecheck on every push. A tap's fake hover events raced the click and closed the phone menu about 10% of the time on Linux, and that phone test failed CI at `f2f9e0e`. Fixed in `1c38b17`.
+Tested: real pushes to the live demo (`96e9918`, `a8abeac`), then the sample copy put back (`b49b86b`). 18 of 18 tabs got the update, 0 reloaded, and an open modal and scroll position survived.
 
 ## Test log
 
 | Check | Result |
 |---|---|
 | `67892a0`: Playwright | 10 of 10 |
-| Fixed build: push to visible edit, 3 pushes, 6 tabs each | Median 23.7 s, range 21.8 to 29.8 s |
-| Browsers in the timing runs | Chromium, Firefox, WebKit, at desktop and phone sizes |
+| `38cbe97` build: push to visible edit, 3 pushes, 6 tabs each | Median 23.7 s, range 21.8 to 29.8 s, page loaded again |
 | `25994dc`: Playwright | 34 of 34 |
+| In-place build: push to visible edit, 3 pushes, 6 tabs each | Median 21.7 s, range 18.3 to 27.7 s |
+| In-place build: tabs that got the update | 18 of 18, 0 reloads |
+| In-place build: open modal and scroll position | Survived |
+| Browsers in the timing runs | Chromium, Firefox, WebKit, at desktop and phone sizes |
+| `fa9a19a`: Playwright | 39 of 39 |
 | Deck view PDF, 12 starter slides | 12 pages |
 
-About 20 of the seconds in that median are Vercel building, so a bigger deck takes longer. CI on `main` runs lint, the build and the full Playwright suite on every push. You can read the runs on the repo's Actions tab, and you can try the update yourself by deploying your own copy.
+Most of that time is Vercel building, so a bigger deck takes longer. CI on `main` runs lint, the build and the full Playwright suite on every push. You can read the runs on the repo's Actions tab, and you can try the update yourself by deploying your own copy.
 
 ## Roads not taken
 

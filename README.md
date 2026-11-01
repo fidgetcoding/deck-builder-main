@@ -6,7 +6,7 @@
 
 **Try it live: <https://deck-builder-main.vercel.app/deck-builder>**
 
-You send one URL. It opens as a slide deck on a laptop and a long scroll on a phone, and whoever's looking can flip between the two. When you change something and push, every open tab picks it up on its own and stays on the slide it was on. That includes the tab you're sharing on a call.
+You send one URL. It opens as a slide deck on a laptop and a long scroll on a phone, and whoever's looking can flip between the two. When you change something and push, the update lands on every open tab without a reload, on the slide it was on. That includes the tab you're sharing on a call.
 
 ## Why I made it
 
@@ -73,7 +73,7 @@ git commit -am "fix the number on slide 4"
 git push
 ```
 
-Vercel builds it, and every open tab picks it up on its own and lands back on the same slide or scroll position. Nobody has to refresh anything.
+Vercel builds it, and the update lands on every open tab without a reload, right where the viewer is. Nobody has to refresh anything.
 
 I timed this on the live demo: 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes, with one of them sitting on an open booking modal. From `git push` to the edit on screen took 18 to 28 seconds, with a median of 22, and most of that is Vercel building. None of the 18 tabs reloaded, and the modal stayed open. So it's "give me half a minute," and a bigger deck will take longer.
 

@@ -2,7 +2,7 @@
 
 **Try it live: <https://deck-builder-main.vercel.app/deck-builder>**
 
-**What it is.** A deck that's a link. One URL opens as slides on a laptop and as a long scroll on a phone. When you push a change, every open tab picks it up by itself and stays on the slide it was on.
+**What it is.** A deck that's a link. One URL opens as slides on a laptop and as a long scroll on a phone. When you push a change, the update lands on every open tab without a reload, on the slide it was on.
 
 **Who it's for.** Anyone who sends decks and would rather send a link, and who's fine with their deck being code. There's no editor. You or your agent edit files and push.
 
@@ -11,9 +11,10 @@
 **What's different.**
 
 - One link, two views, and nobody has to pick. Laptops land on the deck, phones land on the scroll, and a toggle flips between them.
-- The tab you're sharing on a call updates itself. An update shows up on open tabs about 24 seconds after you push, on the slide you're on, and the only thing that changes on screen is your edit.
-- It has manners. It holds an update while someone's in the booking modal or watching a video with the sound on, and a failed check mid-deploy does nothing.
-- There's an optional lock. Set `DECK_PASSCODE` and every response stays on the server until someone enters the code, including the JavaScript that holds your slide copy.
+- The tab you're sharing on a call updates itself, without a reload. An update shows up about 22 seconds after you push, right where the viewer is, and the only thing that changes on screen is your edit. Slide words, brand values and styles all swap in place.
+- There's one exception. A push that changes code running in the browser does load the page again. It waits until nobody's in the booking modal or watching a video with the sound on, and it keeps your place.
+- It has manners. Someone mid-booking keeps their open modal, a reader keeps their scroll position, and a failed check mid-deploy does nothing.
+- There's an optional lock. Set `DECK_PASSCODE` and nothing of your deck leaves the server until someone enters the code.
 - Each slide is its own `.tsx` file, not a template fill-in, so a slide can look like whatever it needs to.
 
 **How to try it.** Open the live link above. To make your own:
@@ -29,7 +30,7 @@ Open <http://localhost:3000/deck-builder>. To see updates land for real, put it 
 
 **What works today.** You can check all of this from the repo and the live demo:
 
-- Push to visible edit: median 23.7 seconds, range 21.8 to 29.8, on the live demo. 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes. About 20 of those seconds are Vercel building.
-- 34 of 34 Playwright tests pass in CI, along with lint and the build. They cover both views, updates landing in place, the passcode, phone layouts and printing.
+- Push to visible edit on the live demo: median 21.7 seconds, range 18.3 to 27.7. 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes. All 18 tabs got the update and none of them reloaded. An open modal and scroll position survived. Most of that time is Vercel building.
+- 39 of 39 Playwright tests pass in CI, along with lint and the build. They cover both views, updates landing in place, the passcode, phone layouts and printing.
 - Long slides scroll inside themselves on a phone.
 - The deck view prints every slide. The 12 starter slides make a 12-page PDF.
