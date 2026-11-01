@@ -10,7 +10,8 @@ const REQUEST_TIMEOUT_MS = 20_000;
 // How long a slow connection gets to deliver a swap before we ask again.
 const REFRESH_PATIENCE_MS = 30_000;
 // A refresh that hasn't landed after this many goes falls back to a reload.
-const MAX_REFRESH_TRIES = 3;
+const MAX_REFRESH_TRIES = 5;
+const SETTLE_MS = 1_000;
 const RETRY_MS = 3_000;
 
 /** Don't yank the page out from under someone booking a call or watching a film. */
@@ -141,6 +142,13 @@ export default function DeckUpdateWatcher() {
           });
           waitingOnNetwork = false;
           if (!res.ok) refreshedAt = 0;
+          // Patience is for a request that's still coming. Once it's all here and the
+          // page didn't change, it came from a server that hasn't caught up: ask again.
+          res
+            .clone()
+            .arrayBuffer()
+            .then(() => setTimeout(() => (refreshedAt = 0), SETTLE_MS))
+            .catch(() => {});
           if (!pin) return res;
           const vouched = new Response(res.body, res);
           vouched.headers.set("x-nextjs-deployment-id", pin);

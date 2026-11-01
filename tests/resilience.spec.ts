@@ -22,6 +22,7 @@ async function fakeNetwork(target: Page | BrowserContext) {
     failRefresh: false,
     refreshes: 0,
     polls: 0,
+    staleRefreshes: 0,
   };
   await target.route("**/api/deck-version", async (route) => {
     state.polls++;
@@ -37,7 +38,8 @@ async function fakeNetwork(target: Page | BrowserContext) {
     }
     const res = await route.fetch().catch(() => null);
     if (!res) return;
-    await route.fulfill({ response: res, body: withStamp(await res.text(), state.version) }).catch(() => {});
+    const served = isRefresh && state.staleRefreshes-- > 0 ? "build-1" : state.version;
+    await route.fulfill({ response: res, body: withStamp(await res.text(), served) }).catch(() => {});
   });
   return state;
 }
@@ -68,6 +70,18 @@ test.describe("on a bad connection", () => {
     await expect(stamp(page)).toHaveAttribute("data-deck-build", "build-2", { timeout: 20_000 });
     expect(await navType(page)).toBe("navigate");
     expect(net.refreshes).toBe(1);
+  });
+
+  test("a refresh answered by a server that hasn't caught up tries again soon", async ({ page }) => {
+    const net = await fakeNetwork(page);
+    await page.goto(`/deck-builder?view=deck#${at(4)}`);
+    await expect.poll(() => net.polls).toBeGreaterThan(0);
+    net.staleRefreshes = 1;
+    net.version = "build-2";
+    await pollNow(page);
+    await expect(stamp(page)).toHaveAttribute("data-deck-build", "build-2", { timeout: 10_000 });
+    expect(await navType(page)).toBe("navigate");
+    expect(net.refreshes).toBe(2);
   });
 
   test("losing the connection mid-swap never navigates to an error page", async ({ page }) => {
@@ -182,7 +196,8 @@ test.describe("from the keyboard", () => {
 
   test("the keyboard always shows where it is", async ({ page }) => {
     await ready(page, `/deck-builder?view=deck#${at(4)}`);
-    await page.keyboard.press("Tab");
+    await page.keyboard.press("Tab"); // puts the browser in keyboard mode
+    await page.getByRole("button", { name: "Open menu" }).first().focus();
     const outline = await page.evaluate(() => getComputedStyle(document.activeElement!).outlineStyle);
     expect(outline).toBe("solid");
   });
