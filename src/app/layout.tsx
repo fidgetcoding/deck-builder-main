@@ -3,6 +3,7 @@ import { Geist_Mono, Outfit } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import ViewTransitionHandler from "@/components/ViewTransitionHandler";
 import DeckUpdateWatcher from "@/components/DeckUpdateWatcher";
+import { BrandProvider } from "@/components/BrandContext";
 import { brand } from "@/lib/brand";
 import "./globals.css";
 
@@ -76,7 +77,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ViewTransitionHandler />
         <DeckUpdateWatcher />
-        {children}
+        <BrandProvider brand={brand}>{children}</BrandProvider>
         <Analytics />
       </body>
     </html>

@@ -25,19 +25,12 @@ test.describe("with DECK_PASSCODE set", () => {
     expect(html).not.toContain("/_next/static");
   });
 
-  test("the JS chunks holding the slide copy are locked too", async ({ request }) => {
-    // Find them on the open server, so this fails if the copy ever moves somewhere new.
+  test("the JS chunks are locked too", async ({ request }) => {
+    // Take the list from the open server, since the locked one won't give it up.
     const open = test.info().project.use.baseURL!;
     const html = await (await request.get(`${open}/deck-builder?view=deck`)).text();
     const chunks = [...new Set(html.match(/\/_next\/static\/[^"\\?]+\.js/g))];
     expect(chunks.length).toBeGreaterThan(0);
-
-    const withCopy: string[] = [];
-    for (const chunk of chunks) {
-      const body = await (await request.get(`${open}${chunk}`)).text();
-      if (SLIDE_COPY.test(body)) withCopy.push(chunk);
-    }
-    expect(withCopy.length, "the copy really does ship in chunks").toBeGreaterThan(0);
 
     for (const chunk of chunks) {
       const res = await request.get(chunk);
@@ -122,16 +115,16 @@ test.describe("with DECK_PASSCODE set", () => {
     });
     await context.route(/\/deck-builder(\?|#|$)/, async (route) => {
       const res = await route.fetch();
-      const body = (await res.text()).replace(/data-deck-build="[^"]*"/, `data-deck-build="${version}"`);
+      const body = (await res.text())
+        .replace(/data-deck-build="[^"]*"/, `data-deck-build="${version}"`)
+        .replace(/(\\?"data-deck-build\\?":\\?")[^"\\]*/g, `$1${version}`);
       return route.fulfill({ response: res, body });
     });
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-1");
     await expect.poll(() => polls).toBeGreaterThan(0);
     version = "build-2";
-    const reloaded = page.waitForEvent("load");
     await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
-    await reloaded;
     await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-2");
     await expect(page).toHaveURL(/\?view=deck#4$/);
     await expect(page.getByText("HEADER 03: Section Eyebrow").first()).toBeVisible();

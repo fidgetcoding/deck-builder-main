@@ -1,17 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { brand as site } from "@/lib/brand";
+import { useBrand } from "@/components/BrandContext";
 import FadeIn from "@/components/helpers/FadeIn";
 import WorkPlayer from "./WorkPlayer";
 import BrandMenu from "./BrandMenu";
 import type { BrandConfig } from "./brands";
-import {
-  defaultBrands,
-  defaultBrandLogos,
-  defaultBrandSkipInvert,
-  defaultBrandLogoSizeOverride,
-} from "./brands";
 
 interface Props {
   brand: BrandConfig;
@@ -82,6 +76,7 @@ const capabilityIcons = [
 ];
 
 export default function BrandProposal({ brand, chromeVariant }: Props) {
+  const site = useBrand();
   const ctaShape = chromeVariant === "rounded-rect" ? "rounded-[12px]" : "rounded-full";
   const showTOC = chromeVariant === "rounded-rect";
   const placeholder = !!brand.placeholderMode;
@@ -479,21 +474,21 @@ export default function BrandProposal({ brand, chromeVariant }: Props) {
             </h2>
           </FadeIn>
           <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {defaultBrands.map((b, i) => (
-              <FadeIn key={b} delay={200 + i * 40}>
+            {(brand.logos ?? []).map((b, i) => (
+              <FadeIn key={b.name} delay={200 + i * 40}>
                 <div className="rounded-xl border border-white/10 p-4 sm:p-6 flex flex-col items-center justify-center gap-3 h-28 sm:h-32 bg-white/[0.02]">
-                  {defaultBrandLogos[b] ? (
+                  {b.src ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={defaultBrandLogos[b]}
-                      alt={b}
-                      className={`${defaultBrandLogoSizeOverride[b] || "max-h-12 sm:max-h-14 max-w-[110px] sm:max-w-[140px]"} object-contain ${
-                        defaultBrandSkipInvert.has(b) ? "" : "brightness-0 invert"
+                      src={b.src}
+                      alt={b.name}
+                      className={`${b.sizeClass || "max-h-12 sm:max-h-14 max-w-[110px] sm:max-w-[140px]"} object-contain ${
+                        b.keepColor ? "" : "brightness-0 invert"
                       }`}
                     />
                   ) : null}
                   <p className="text-[11px] sm:text-xs text-center leading-tight text-white/60">
-                    {b}
+                    {b.name}
                   </p>
                 </div>
               </FadeIn>

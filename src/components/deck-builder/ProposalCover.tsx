@@ -1,9 +1,7 @@
 "use client";
 
 import FadeIn from "@/components/helpers/FadeIn";
-import { brand } from "@/lib/brand";
-
-const ACCENT = brand.accent;
+import { useBrand } from "@/components/BrandContext";
 
 /**
  * Scroll-view cover hero: mirrors deck-template/slides/SlideCover.tsx
@@ -11,6 +9,8 @@ const ACCENT = brand.accent;
  * Sits above BrandProposal in DualTemplate when view === "proposal".
  */
 export default function ProposalCover() {
+  const brand = useBrand();
+  const ACCENT = brand.accent;
   return (
     <section className="relative min-h-screen w-full overflow-hidden bg-[#0a0a0a]">
       <div

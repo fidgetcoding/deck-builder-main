@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { slides, sections } from "./slidesRegistry";
-import { brand } from "@/lib/brand";
+import type { SlideMeta } from "./slideTypes";
+import { useBrand } from "@/components/BrandContext";
 import ContactModalTrigger from "@/components/shared/ContactModalTrigger";
 
-const ACCENT = brand.accent;
-
 type Props = {
+  slides: SlideMeta[];
   currentIdx: number;
   total: number;
   onPrev: () => void;
@@ -22,6 +21,7 @@ type Props = {
 };
 
 export default function DeckChrome({
+  slides,
   currentIdx,
   total,
   onPrev,
@@ -34,6 +34,11 @@ export default function DeckChrome({
   setFilmstripOpen,
   chromeVariant = "circle",
 }: Props) {
+  const brand = useBrand();
+  const ACCENT = brand.accent;
+  const sections = slides.flatMap((slide, firstSlideIndex) =>
+    slide.section ? [{ id: slide.section, label: slide.section, firstSlideIndex }] : [],
+  );
   const isRect = chromeVariant === "rounded-rect";
   // Size-proportional radii (~25% of side) for clear rounded-square look on every button
   const burgerShape = isRect ? "rounded-[10px]" : "rounded-full";   // 40x40
@@ -345,6 +350,7 @@ export default function DeckChrome({
 }
 
 function ThumbPreview({ slideId, caption }: { slideId: string; caption: string }) {
+  const ACCENT = useBrand().accent;
   const isCover = slideId === "cover";
   const isNextSteps = slideId === "next-steps";
   const bg = isCover || isNextSteps ? ACCENT : "#0a0a0a";

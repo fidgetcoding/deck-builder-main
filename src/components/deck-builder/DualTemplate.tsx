@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import TheDeckTemplate from "@/components/deck-template/TheDeckTemplate";
 import BrandProposal from "@/components/proposal/BrandProposal";
-import { proposalTemplate } from "@/components/proposal/brands";
+import type { BrandConfig } from "@/components/proposal/brands";
+import type { DeckSlide } from "@/components/deck-template/slideTypes";
 import ViewToggle from "./ViewToggle";
 import ClientLogoHeader from "./ClientLogoHeader";
 import ProposalCover from "./ProposalCover";
@@ -13,10 +14,14 @@ type View = "deck" | "proposal";
 const PROPOSAL_FIRST_SECTION_ID = "letter";
 
 export default function DualTemplate({
+  slides,
+  proposal,
   initialView = null,
   initialDeckIdx = 0,
   initialPastCover = false,
 }: {
+  slides: DeckSlide[];
+  proposal: BrandConfig;
   initialView?: View | null;
   initialDeckIdx?: number;
   initialPastCover?: boolean;
@@ -142,6 +147,7 @@ export default function DualTemplate({
     <>
       {view === "deck" ? (
         <TheDeckTemplate
+          slides={slides}
           onSlideChange={handleDeckSlideChange}
           initialSlideIdx={deckIdx}
           chromeVariant="rounded-rect"
@@ -149,7 +155,7 @@ export default function DualTemplate({
       ) : (
         <>
           <ProposalCover />
-          <BrandProposal brand={proposalTemplate} chromeVariant="rounded-rect" />
+          <BrandProposal brand={proposal} chromeVariant="rounded-rect" />
         </>
       )}
 

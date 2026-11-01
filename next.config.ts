@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Next reloads a tab when a refresh comes back from a different build ID. Open
+  // decks work out for themselves whether a new build needs that (DeckUpdateWatcher).
+  generateBuildId: () => "deck",
   // Inlined at build, so every build gets a new one. /api/deck-version serves it
   // and open decks reload when it changes.
   env: {

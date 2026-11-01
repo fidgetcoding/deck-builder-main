@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import DeckChrome from "./DeckChrome";
-import { slides } from "./slidesRegistry";
+import type { DeckSlide } from "./slideTypes";
 
 const TRANSITION_MS = 300;
 
@@ -13,12 +13,13 @@ function scrollingSlide(target: EventTarget | null): HTMLElement | null {
 }
 
 type Props = {
+  slides: DeckSlide[];
   onSlideChange?: (idx: number) => void;
   initialSlideIdx?: number;
   chromeVariant?: "circle" | "rounded-rect";
 };
 
-export default function TheDeckTemplate({ onSlideChange, initialSlideIdx = 0, chromeVariant }: Props = {}) {
+export default function TheDeckTemplate({ slides, onSlideChange, initialSlideIdx = 0, chromeVariant }: Props) {
   const total = slides.length;
   const [current, setCurrent] = useState(() =>
     Math.max(0, Math.min(slides.length - 1, initialSlideIdx)),
@@ -183,7 +184,6 @@ export default function TheDeckTemplate({ onSlideChange, initialSlideIdx = 0, ch
         {slides.map((slide, i) => {
           const active = i === current;
           const showing = i === current || i === prev;
-          const Component = slide.Component;
           return (
             <div
               key={slide.id}
@@ -196,13 +196,14 @@ export default function TheDeckTemplate({ onSlideChange, initialSlideIdx = 0, ch
               }}
               aria-hidden={!active}
             >
-              {showing ? <Component /> : null}
+              {showing ? slide.node : null}
             </div>
           );
         })}
       </div>
 
       <DeckChrome
+        slides={slides}
         currentIdx={current}
         total={total}
         onPrev={() => goTo(current - 1)}
@@ -221,7 +222,7 @@ export default function TheDeckTemplate({ onSlideChange, initialSlideIdx = 0, ch
     <div className="deck-print hidden print:block text-white" aria-hidden="true">
       {slides.map((slide) => (
         <div key={slide.id} className="deck-print-slide">
-          <slide.Component />
+          {slide.node}
         </div>
       ))}
     </div>

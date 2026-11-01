@@ -1,11 +1,12 @@
 'use client';
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { brand } from '@/lib/brand';
+import { useBrand } from '@/components/BrandContext';
 
 type Props = { open: boolean; onClose: () => void };
 
 export function ContactModal({ open, onClose }: Props) {
+  const brand = useBrand();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {

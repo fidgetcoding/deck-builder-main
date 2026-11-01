@@ -1,6 +1,6 @@
 "use client";
 
-import { brand } from "@/lib/brand";
+import { useBrand } from "@/components/BrandContext";
 
 type Props = {
   visible: boolean;
@@ -11,10 +11,12 @@ type Props = {
 
 export default function ClientLogoHeader({
   visible,
-  clientLabel = brand.client,
+  clientLabel,
   clientLogoSrc,
   clientLogoAlt,
 }: Props) {
+  const brand = useBrand();
+  const label = clientLabel ?? brand.client;
   return (
     <div
       aria-hidden={!visible}
@@ -38,12 +40,12 @@ export default function ClientLogoHeader({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={clientLogoSrc}
-              alt={clientLogoAlt ?? clientLabel}
+              alt={clientLogoAlt ?? label}
               className="h-4 sm:h-5 w-auto opacity-90 group-hover:opacity-100 transition-opacity"
             />
           ) : (
             <span className="text-white text-xs sm:text-sm font-semibold tracking-[0.25em] sm:tracking-[0.3em] uppercase opacity-90 group-hover:opacity-100 transition-opacity">
-              {clientLabel}
+              {label}
             </span>
           )}
           <span className="text-white/40 text-base sm:text-lg font-light">×</span>

@@ -1,5 +1,3 @@
-"use client";
-
 import FadeIn from "@/components/helpers/FadeIn";
 import { brand } from "@/lib/brand";
 

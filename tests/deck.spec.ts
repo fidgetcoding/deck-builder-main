@@ -1,14 +1,20 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * Pretend to deploy. `version` is what the version check says is live, and `page`
- * is the build the server's HTML is stamped with. Moving both is a clean deploy.
+ * Pretend to deploy, by rewriting what the server sends.
+ *
+ * `live` is what the version check says, `served` is the build the server's pages
+ * are stamped with, and setting `version` moves both, like a clean deploy. `subhead`
+ * is a copy edit. `newCode` makes the new page ask for a script this tab hasn't
+ * loaded, which is what a deploy with new JS looks like.
  */
 async function fakeDeployments(page: Page) {
   const state = {
     polls: 0,
     live: "build-1",
     served: "build-1",
+    subhead: "[Subheadline: sed do eiusmod.]",
+    newCode: false,
     set version(next: string) {
       state.live = next;
       state.served = next;
@@ -18,9 +24,18 @@ async function fakeDeployments(page: Page) {
     state.polls++;
     return route.fulfill({ json: { version: state.live } });
   });
+  await page.route("**/_next/static/fake-new-code.js", (route) =>
+    route.fulfill({ contentType: "text/javascript", body: "" }),
+  );
   await page.route(/\/deck-(builder|template)(\?|#|$)/, async (route) => {
     const res = await route.fetch();
-    const body = (await res.text()).replace(/data-deck-build="[^"]*"/, `data-deck-build="${state.served}"`);
+    let body = (await res.text())
+      .replaceAll("[Subheadline: sed do eiusmod.]", state.subhead)
+      .replace(/data-deck-build="[^"]*"/, `data-deck-build="${state.served}"`)
+      .replace(/(\\?"data-deck-build\\?":\\?")[^"\\]*/g, `$1${state.served}`);
+    if (state.newCode) {
+      body = body.replace("</head>", '<script src="/_next/static/fake-new-code.js" async></script></head>');
+    }
     return route.fulfill({ response: res, body });
   });
   return state;
@@ -90,8 +105,120 @@ test.describe("on a phone", () => {
   });
 });
 
+test.describe("a copy edit lands in place", () => {
+  const navType = (page: Page) =>
+    page.evaluate(() => performance.getEntriesByType("navigation")[0].toJSON().type);
+
+  test("no reload: same page, same slide, new words", async ({ page }) => {
+    const deploy = await fakeDeployments(page);
+    await page.goto("/deck-builder?view=deck#4");
+    await expect.poll(() => deploy.polls).toBeGreaterThan(0);
+    await page.evaluate(() => {
+      (window as unknown as { marker: string }).marker = "still here";
+    });
+    const slide = page.locator('[aria-hidden="false"] section');
+    await slide.evaluate((el) => {
+      el.setAttribute("data-same-node", "yes");
+    });
+
+    deploy.subhead = "New words, no reload.";
+    deploy.version = "build-2";
+    await pollNow(page);
+
+    await expect(page.getByRole("heading", { name: "New words, no reload." }).first()).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-2");
+    expect(await navType(page)).toBe("navigate");
+    expect(await page.evaluate(() => (window as unknown as { marker: string }).marker)).toBe("still here");
+    await expect(slide).toHaveAttribute("data-same-node", "yes");
+    await expect(page).toHaveURL(/\/deck-builder\?view=deck#4$/);
+  });
+
+  test("an open booking modal and half-typed text survive it", async ({ page }) => {
+    const deploy = await fakeDeployments(page);
+    await page.goto("/deck-builder?view=deck#4");
+    await expect.poll(() => deploy.polls).toBeGreaterThan(0);
+    await page.getByRole("button", { name: "Open menu" }).click();
+    await page.getByRole("button", { name: "Contact", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await page.evaluate(() => {
+      const w = window as unknown as { frameNode: Element | null };
+      w.frameNode = document.querySelector('[role="dialog"] iframe');
+      const input = document.createElement("input");
+      input.id = "half-typed";
+      document.querySelector('[aria-hidden="false"] section')!.append(input);
+      input.value = "half a sentence";
+    });
+
+    deploy.subhead = "Landed under the modal.";
+    deploy.version = "build-2";
+    await pollNow(page);
+
+    await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-2");
+    await expect(page.getByRole("heading", { name: "Landed under the modal." }).first()).toBeAttached();
+    await expect(dialog).toBeVisible();
+    expect(
+      await page.evaluate(() => {
+        const w = window as unknown as { frameNode: Element };
+        return w.frameNode.isConnected && w.frameNode === document.querySelector('[role="dialog"] iframe');
+      }),
+    ).toBe(true);
+    await expect(page.locator("#half-typed")).toHaveValue("half a sentence");
+    expect(await navType(page)).toBe("navigate");
+  });
+
+  test("the scroll view keeps its exact position", async ({ page }) => {
+    const deploy = await fakeDeployments(page);
+    await page.goto("/deck-builder?view=scroll");
+    await expect.poll(() => deploy.polls).toBeGreaterThan(0);
+    await expect(async () => {
+      await page.evaluate(() => window.scrollTo({ top: 1500, behavior: "instant" }));
+      await page.evaluate(() => new Promise(requestAnimationFrame));
+      expect(await page.evaluate(() => window.scrollY)).toBe(1500);
+    }).toPass();
+
+    deploy.version = "build-2";
+    await pollNow(page);
+
+    await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-2");
+    expect(await page.evaluate(() => window.scrollY)).toBe(1500);
+    expect(await navType(page)).toBe("navigate");
+  });
+
+  test("a refresh that never lands falls back to a reload instead of staying stale", async ({ page }) => {
+    const deploy = await fakeDeployments(page);
+    await page.goto("/deck-builder?view=deck#4");
+    await expect.poll(() => deploy.polls).toBeGreaterThan(0);
+
+    // The version check and the page agree on build-2, but refreshes never deliver it.
+    await page.route(
+      /\/deck-builder\?.*_rsc=/,
+      (route) => route.fulfill({ status: 500, body: "" }),
+    );
+    deploy.version = "build-2";
+    await expect(async () => {
+      await pollNow(page);
+      expect(await navType(page)).toBe("reload");
+    }).toPass({ timeout: 15_000 });
+    await expect(page.locator("html")).toHaveAttribute("data-deck-build", "build-2");
+    await expect(page).toHaveURL(/#4$/);
+  });
+
+  test("slide and brand copy isn't in any JS chunk, which is what makes this possible", async ({ page, request }) => {
+    await page.goto("/deck-builder?view=deck");
+    const html = await (await request.get("/deck-builder?view=deck")).text();
+    const chunks = [...new Set(html.match(/\/_next\/static\/[^"\\?]+\.js/g))];
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(html).toContain("Section Eyebrow");
+    for (const chunk of chunks) {
+      const body = await (await request.get(chunk)).text();
+      expect(body, chunk).not.toMatch(/Section Eyebrow|Lorem ipsum|Cover headline|Your one-line tagline/);
+    }
+  });
+});
+
 test.describe("pushing while someone's watching", () => {
-  test("an open deck reloads on a new build and stays on its slide", async ({ page }) => {
+  test("new JS reloads an open deck and it stays on its slide", async ({ page }) => {
     const deploy = await fakeDeployments(page);
     await page.goto("/deck-builder?view=deck#4");
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
@@ -100,6 +227,7 @@ test.describe("pushing while someone's watching", () => {
     await page.waitForTimeout(200);
     expect(await page.evaluate(() => performance.getEntriesByType("navigation")[0].toJSON().type)).toBe("navigate");
 
+    deploy.newCode = true;
     deploy.version = "build-2";
     const reloaded = page.waitForEvent("load");
     await pollNow(page);
@@ -110,7 +238,7 @@ test.describe("pushing while someone's watching", () => {
     await expect(page.getByText("HEADER 03: Section Eyebrow").first()).toBeVisible();
   });
 
-  test("the scroll view keeps its view and its place", async ({ page }) => {
+  test("new JS reloads the scroll view and it keeps its view and its place", async ({ page }) => {
     const deploy = await fakeDeployments(page);
     await page.goto("/deck-builder");
     await page.getByRole("button", { name: "Scroll view" }).click();
@@ -123,6 +251,7 @@ test.describe("pushing while someone's watching", () => {
       expect(await page.evaluate(() => window.scrollY)).toBe(1500);
     }).toPass();
 
+    deploy.newCode = true;
     deploy.version = "build-2";
     const reloaded = page.waitForEvent("load");
     await pollNow(page);
@@ -133,7 +262,7 @@ test.describe("pushing while someone's watching", () => {
     await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(1500);
   });
 
-  test("it waits until the booking modal closes", async ({ page }) => {
+  test("new JS waits until the booking modal closes", async ({ page }) => {
     const deploy = await fakeDeployments(page);
     await page.goto("/deck-builder?view=deck#3");
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
@@ -141,6 +270,7 @@ test.describe("pushing while someone's watching", () => {
     await page.getByRole("button", { name: "Contact" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
 
+    deploy.newCode = true;
     deploy.version = "build-2";
     await pollNow(page);
     await page.waitForTimeout(500);
@@ -159,6 +289,7 @@ test.describe("pushing while someone's watching", () => {
     await expect.poll(() => deploy.polls).toBeGreaterThan(0);
 
     // Mid-deploy: the version check says new, the page is still the old one.
+    deploy.newCode = true;
     deploy.live = "build-2";
     await pollNow(page);
     await page.waitForTimeout(400);

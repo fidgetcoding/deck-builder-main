@@ -1,5 +1,7 @@
 import DualTemplate from "@/components/deck-builder/DualTemplate";
 import { ResumeBoundary } from "@/components/helpers/FadeIn";
+import { deckSlides } from "@/components/deck-template/slidesRegistry";
+import { proposalTemplate } from "@/components/proposal/brands";
 import { brand } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +27,8 @@ export default async function DeckBuilderPage({
   return (
     <ResumeBoundary resumed={resumeAt !== null}>
       <DualTemplate
+        slides={deckSlides}
+        proposal={proposalTemplate}
         initialView={initialView}
         initialDeckIdx={initialView === "deck" && resumeAt ? resumeAt - 1 : 0}
         initialPastCover={initialView === "proposal" && (resumeAt ?? 0) > PAST_COVER_PX}

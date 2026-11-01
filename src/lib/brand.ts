@@ -5,6 +5,8 @@
  * src/components/deck-template/slides/, scroll copy in
  * src/components/proposal/brands.ts. Your logo is public/wmark.svg.
  */
+export type Brand = typeof brand;
+
 export const brand = {
   /** Who's presenting. */
   name: "Lorecraft",

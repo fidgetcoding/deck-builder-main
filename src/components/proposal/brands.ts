@@ -63,7 +63,9 @@ export interface BrandConfig {
   caseFilmSrc?: string;
   bonusFilmSrc?: string;
 
+  // Set showBrandsGrid and list logos here to show a logo grid.
   showBrandsGrid?: boolean;
+  logos?: { name: string; src?: string; keepColor?: boolean; sizeClass?: string }[];
 
   closingHeadline?: string;
   closingBody: string;
@@ -137,12 +139,3 @@ export const proposalTemplate: BrandConfig = {
   closingBody:
     "[Closing paragraph: lorem ipsum dolor sit amet, consectetur adipiscing elit. When you are ready for the next campaign, we are one email away.]",
 };
-
-// Fill these in to show a logo grid (and set showBrandsGrid: true above).
-export const defaultBrands: string[] = [];
-
-export const defaultBrandLogos: Record<string, string> = {};
-
-export const defaultBrandSkipInvert = new Set<string>();
-
-export const defaultBrandLogoSizeOverride: Record<string, string> = {};

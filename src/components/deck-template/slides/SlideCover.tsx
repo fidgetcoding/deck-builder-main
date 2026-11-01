@@ -1,7 +1,6 @@
-"use client";
-
 import FadeIn from "@/components/helpers/FadeIn";
 import { brand } from "@/lib/brand";
+import CoverArrow from "./CoverArrow";
 
 const ACCENT = brand.accent;
 
@@ -53,14 +52,7 @@ export default function SlideCover() {
 
       <div className="absolute bottom-28 sm:bottom-20 left-0 right-0 z-10 flex justify-center pointer-events-none">
         <FadeIn delay={560}>
-          <a
-            href="#2"
-            onMouseEnter={() => {
-              if (typeof window !== "undefined") window.location.hash = "#2";
-            }}
-            aria-label="Continue into the deck"
-            className="scroll-hint-link inline-flex text-white/80 hover:text-white pointer-events-auto"
-          >
+          <CoverArrow>
             <span className="scroll-hint-inner animate-scroll-hint inline-flex">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -76,7 +68,7 @@ export default function SlideCover() {
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </span>
-          </a>
+          </CoverArrow>
         </FadeIn>
       </div>
       <div className="absolute bottom-16 sm:bottom-8 left-0 right-0 z-10 text-center pointer-events-none">

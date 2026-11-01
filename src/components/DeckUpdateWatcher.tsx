@@ -1,9 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-const POLL_MS = 5_000;
+const POLL_MS = 3_000;
 const WARM_TIMEOUT_MS = 3_000;
+// A refresh that hasn't landed after this many checks falls back to a reload.
+const MAX_REFRESH_TRIES = 3;
 
 /** Don't yank the page out from under someone booking a call or watching a film. */
 function viewerIsBusy() {
@@ -13,7 +16,7 @@ function viewerIsBusy() {
   );
 }
 
-/** Pick up where a live update left off, then clean the URL back up. */
+/** Pick up where a reload left off, then clean the URL back up. */
 function finishResume() {
   const url = new URL(window.location.href);
   const resume = url.searchParams.get("resume");
@@ -52,16 +55,21 @@ function resumeUrl() {
   return url;
 }
 
-/**
- * Load the new build before leaving the old one, so the reload has nothing to
- * wait for. Mid-deploy, a server can say there's a new build and still hand back
- * the old page, so this returns false until the page itself is the new one.
- */
-async function warm(url: URL, version: string) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return false;
+const scriptPaths = (root: Document) =>
+  Array.from(root.querySelectorAll("script[src]"), (el) =>
+    new URL(el.getAttribute("src")!, window.location.href).pathname,
+  );
+
+/** Fetch the new page. Mid-deploy a server can still hand back the old one, so check. */
+async function fetchNewPage(version: string) {
+  const res = await fetch(resumeUrl(), { cache: "no-store" });
+  if (!res.ok) return null;
   const doc = new DOMParser().parseFromString(await res.text(), "text/html");
-  if (doc.documentElement.dataset.deckBuild !== version) return false;
+  return doc.documentElement.dataset.deckBuild === version ? doc : null;
+}
+
+/** Load what the new page needs before leaving this one, so the reload has nothing to wait for. */
+async function warm(doc: Document) {
   const assets = Array.from(
     doc.querySelectorAll<HTMLScriptElement | HTMLLinkElement>(
       'script[src], link[rel="stylesheet"], link[rel="preload"]',
@@ -72,27 +80,51 @@ async function warm(url: URL, version: string) {
     Promise.allSettled(assets.map((asset) => fetch(asset))),
     new Promise((resolve) => setTimeout(resolve, WARM_TIMEOUT_MS)),
   ]);
-  return true;
 }
 
 /**
- * Keeps an open deck current. A push builds a new deployment, but a tab that's
- * already open is still running the old bundle, so it would never see the edit.
+ * Keeps an open deck current. Every page is stamped with the build that rendered
+ * it, and this compares that stamp to the live build.
  *
- * Every page is stamped with the build that rendered it, and this compares that
- * stamp to the live build. A page that came back stale still reads as stale, so
- * it tries again rather than sitting on old copy forever.
+ * Slide copy and brand values are rendered on the server and aren't in any JS
+ * chunk. So when the new page needs no script this tab hasn't already loaded, only
+ * content changed, and it swaps in with no reload: same slide, same scroll, modals
+ * and typing untouched.
  *
- * It's still a reload, because a new build means new code, but the server renders
- * the new page already on the right slide or scroll position and the browser holds
- * the old frame until it's ready, so only the edit changes.
+ * When the new page does need new scripts, this tab's code is out of date and only
+ * a reload can fix that. That one waits for the viewer, and the server renders the
+ * new page already in place so it doesn't flash.
  */
 export default function DeckUpdateWatcher() {
+  const router = useRouter();
+
   useEffect(() => {
     finishResume();
 
-    const rendered = document.documentElement.dataset.deckBuild;
+    // Next pins its refreshes to the deployment this tab loaded from, and reloads
+    // the page if the answer comes from any other. For a content swap we want the
+    // newest deployment and no reload, so for those requests we drop the pin and
+    // vouch for the answer ourselves. If this ever stops matching how Next works,
+    // the worst case is that Next falls back to a reload.
+    const realFetch = window.fetch;
+    let swapping = false;
+    window.fetch = async (input, init) => {
+      const headers = new Headers(init?.headers);
+      if (!swapping || !headers.has("RSC")) return realFetch(input, init);
+      const pin = headers.get("x-deployment-id");
+      headers.delete("x-deployment-id");
+      const res = await realFetch(input, { ...init, headers });
+      if (!pin) return res;
+      const vouched = new Response(res.body, res);
+      vouched.headers.set("x-nextjs-deployment-id", pin);
+      Object.defineProperty(vouched, "url", { value: res.url });
+      Object.defineProperty(vouched, "redirected", { value: res.redirected });
+      return vouched;
+    };
+
     let checking = false;
+    let triesFor: string | null = null;
+    let tries = 0;
 
     const check = async () => {
       if (checking || document.visibilityState === "hidden") return;
@@ -101,9 +133,31 @@ export default function DeckUpdateWatcher() {
         const res = await fetch("/api/deck-version", { cache: "no-store" });
         if (!res.ok) return;
         const { version } = (await res.json()) as { version: string };
-        if (version === rendered || viewerIsBusy()) return;
-        if (!(await warm(resumeUrl(), version)) || viewerIsBusy()) return;
+        if (version === document.documentElement.dataset.deckBuild) {
+          swapping = false;
+          return;
+        }
 
+        const doc = await fetchNewPage(version);
+        if (!doc) return;
+
+        const loaded = new Set(scriptPaths(document));
+        const sameCode = scriptPaths(doc).every((path) => loaded.has(path));
+        if (triesFor !== version) {
+          triesFor = version;
+          tries = 0;
+        }
+        if (sameCode && tries < MAX_REFRESH_TRIES) {
+          tries++;
+          swapping = true;
+          router.refresh();
+          return;
+        }
+
+        swapping = false;
+        if (viewerIsBusy()) return;
+        await warm(doc);
+        if (viewerIsBusy()) return;
         // Read the spot again: they may have moved on while the new build warmed up.
         window.history.replaceState(window.history.state, "", resumeUrl());
         window.location.reload();
@@ -118,10 +172,11 @@ export default function DeckUpdateWatcher() {
     const interval = window.setInterval(check, POLL_MS);
     document.addEventListener("visibilitychange", check);
     return () => {
+      window.fetch = realFetch;
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", check);
     };
-  }, []);
+  }, [router]);
 
   return null;
 }
