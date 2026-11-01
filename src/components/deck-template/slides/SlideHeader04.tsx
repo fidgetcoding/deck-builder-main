@@ -16,7 +16,7 @@ export default function SlideHeader04() {
               HEADER 04: Section Eyebrow
             </p>
             <h4 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-snug text-white">
-              [Big pivot statement: updated, run two.]
+              [Big pivot statement: lorem ipsum dolor sit amet.]
             </h4>
             <p className="mt-6 text-xl sm:text-2xl md:text-3xl font-semibold text-white/80">
               [Supporting line: consectetur adipiscing elit.]
