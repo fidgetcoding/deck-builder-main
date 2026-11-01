@@ -1,0 +1,33 @@
+{
+  "name": "deck-builder-main",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A deck that's a link, not a file. Two views, one URL, and updates you can push while you're presenting.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test:e2e": "playwright test",
+    "pdf:export": "node scripts/export-deck-pdf.mjs"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "next": "16.4.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.3",
+    "playwright": "^1.59.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,718 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   DECK BUILDER: DESIGN TOKEN SYSTEM
+   ==========================================================================
+   Palette: deep neutral background + brand greens
+            (light #00962E primary, dark #002014 deep accent)
+   Typography: Outfit (sans) + Geist Mono (mono)
+   Density: deck mode: generous whitespace, slide-friendly grid
+   Variance: 8: asymmetric, offset compositions
+   Motion: 6: fluid CSS transitions, cubic-bezier easing
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. COLOR TOKENS
+   ========================================================================== */
+
+:root {
+  /* ── Brand Colors (the accent is overridden from src/lib/brand.ts) ── */
+  --brand-green-light: #00962E;
+  --brand-green-dark:  #002014;
+
+  --black: #000000;
+  --white: #FFFFFF;
+
+  /* ── Backgrounds ── */
+  --background:            #050505;
+  --background-secondary:  #0f0e0d;
+  --background-tertiary:   #141312;
+
+  /* ── Foregrounds ── */
+  --foreground:            #FFFFFF;
+  --foreground-secondary:  #c8c3bc;
+
+  /* ── Muted ── */
+  --muted:                 #171717;
+  --muted-foreground:      #A0A0A0;
+
+  /* ── Accent: brand green-light ── */
+  --accent:                var(--brand-green-light);
+  --accent-foreground:     #0a0a0a;
+  --accent-muted:          rgba(0, 150, 46, 0.12);
+
+  /* ── Surfaces ── */
+  --surface:               #121110;
+  --surface-raised:        #1a1816;
+
+  /* ── Borders ── */
+  --border:                #262626;
+  --border-strong:         rgba(232, 228, 223, 0.15);
+
+  /* ── Ring (focus) ── */
+  --ring:                  rgba(0, 150, 46, 0.4);
+
+  /* ── Destructive ── */
+  --destructive:           #c0392b;
+  --destructive-foreground:#faf5f0;
+
+  /* ── Radius ── */
+  --radius:                0.5rem;
+  --radius-tight:          0.25rem;
+  --radius-default:        0.5rem;
+  --radius-medium:         0.75rem;
+  --radius-large:          1rem;
+
+  /* ── Transition defaults ── */
+  --ease-default:          cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-out-expo:         cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-expo:      cubic-bezier(0.87, 0, 0.13, 1);
+  --ease-out-back:         cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring:           cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-smooth:           cubic-bezier(0.45, 0, 0.55, 1);
+  --duration-fast:         150ms;
+  --duration-default:      300ms;
+  --duration-slow:         500ms;
+  --duration-slower:       700ms;
+  --duration-slowest:      1000ms;
+
+  /* ── Container ── */
+  --container-max:         1400px;
+  --container-padding:     1.25rem;
+
+  /* ── Content width: responsive ── */
+  --content-width:         calc((100vw - 24px) * 0.95);
+
+  }
+
+@media (min-width: 640px) {
+  :root {
+    --container-padding: 1.5rem;
+    --content-width: calc((100vw - 48px) * 0.92);
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --container-padding: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --container-padding: 3rem;
+    --content-width: calc((100vw - 96px) * 0.85);
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --container-padding: 4rem;
+  }
+}
+
+
+/* ==========================================================================
+   2. TAILWIND v4 @theme: bridges CSS tokens to utility classes
+   ========================================================================== */
+
+@theme inline {
+  /* ── Colors ── */
+  --color-background:           var(--background);
+  --color-background-secondary: var(--background-secondary);
+  --color-background-tertiary:  var(--background-tertiary);
+
+  --color-foreground:           var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
+
+  --color-muted:                var(--muted);
+  --color-muted-foreground:     var(--muted-foreground);
+
+  --color-accent:               var(--accent);
+  --color-accent-foreground:    var(--accent-foreground);
+  --color-accent-muted:         var(--accent-muted);
+
+  --color-surface:              var(--surface);
+  --color-surface-raised:       var(--surface-raised);
+
+  --color-border:               var(--border);
+  --color-border-strong:        var(--border-strong);
+
+  --color-ring:                 var(--ring);
+
+  --color-destructive:           var(--destructive);
+  --color-destructive-foreground:var(--destructive-foreground);
+
+  --color-brand-green-light:     var(--brand-green-light);
+  --color-brand-green-dark:      var(--brand-green-dark);
+
+  /* ── Typography ── */
+  --font-sans: var(--font-outfit), sans-serif;
+  --font-mono: var(--font-geist-mono);
+
+  /* ── Radius ── */
+  --radius-sm:  var(--radius-tight);
+  --radius-md:  var(--radius-default);
+  --radius-lg:  var(--radius-medium);
+  --radius-xl:  var(--radius-large);
+  --radius-2xl: 1.5rem;
+
+  /* ── Shadows: tinted warm (rgba 15,12,8), never pure black ── */
+  --shadow-sm:  0 1px 3px 0 rgba(15, 12, 8, 0.35),
+                0 1px 2px -1px rgba(15, 12, 8, 0.25);
+  --shadow-md:  0 4px 12px -2px rgba(15, 12, 8, 0.45),
+                0 2px 6px -2px rgba(15, 12, 8, 0.3);
+  --shadow-lg:  0 12px 40px -8px rgba(15, 12, 8, 0.55),
+                0 4px 16px -4px rgba(15, 12, 8, 0.35);
+
+  /* ── Easing ── */
+  --ease-default:      cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-out-expo:     cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-expo:  cubic-bezier(0.87, 0, 0.13, 1);
+
+  /* ── Animation durations ── */
+  --animate-duration: 300ms;
+}
+
+
+/* ==========================================================================
+   3. BASE STYLES
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  border-color: var(--border);
+}
+
+html {
+  background: #ffffff;
+}
+
+body {
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--font-outfit), sans-serif;
+}
+
+/* ==========================================================================
+   4. TYPOGRAPHY SCALE
+   ==========================================================================
+
+   Scale hierarchy:
+   display : clamp(3rem, 8vw, 7.5rem)    / 0.92 leading / -0.035em tracking / 300 weight
+   h1      : clamp(2.25rem, 5vw, 4.5rem)  / 0.95 leading / -0.03em tracking  / 300 weight
+   h2      : clamp(1.75rem, 3.5vw, 3rem)  / 1.05 leading / -0.025em tracking / 400 weight
+   h3      : clamp(1.25rem, 2vw, 1.875rem)/ 1.15 leading / -0.02em tracking  / 400 weight
+   h4      : clamp(1rem, 1.5vw, 1.375rem) / 1.25 leading / -0.015em tracking / 500 weight
+   body    : 1rem                          / 1.65 leading / 0.005em tracking  / 400 weight
+   body-lg : 1.125rem                      / 1.6 leading  / 0.005em tracking  / 400 weight
+   small   : 0.875rem                      / 1.5 leading  / 0.01em tracking   / 400 weight
+   caption : 0.75rem                       / 1.4 leading  / 0.04em tracking   / 500 weight
+   mono    : 0.8125rem                     / 1.4 leading  / 0.02em tracking   / 400 weight
+*/
+
+.text-display {
+  font-size: clamp(3rem, 8vw, 7.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+  font-weight: 300;
+}
+
+.text-h1 {
+  font-size: clamp(2.25rem, 5vw, 4.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-weight: 300;
+}
+
+.text-h2 {
+  font-size: clamp(1.75rem, 3.5vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  font-weight: 400;
+}
+
+.text-h3 {
+  font-size: clamp(1.25rem, 2vw, 1.875rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+
+.text-h4 {
+  font-size: clamp(1rem, 1.5vw, 1.375rem);
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  font-weight: 500;
+}
+
+.text-body-lg {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  letter-spacing: 0.005em;
+  font-weight: 400;
+}
+
+.text-caption {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.text-mono {
+  font-family: var(--font-geist-mono), "SF Mono", monospace;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  font-weight: 400;
+}
+
+
+/* ==========================================================================
+   5. CONTAINER UTILITY
+   ========================================================================== */
+
+.container-site {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--container-padding);
+}
+
+
+/* ==========================================================================
+   6. TRANSITIONS: premium feel defaults
+   ========================================================================== */
+
+.transition-default {
+  transition-property: all;
+  transition-duration: var(--duration-default);
+  transition-timing-function: var(--ease-default);
+}
+
+.transition-colors {
+  transition-property: color, background-color, border-color, fill, stroke, opacity;
+  transition-duration: var(--duration-default);
+  transition-timing-function: var(--ease-default);
+}
+
+.transition-transform {
+  transition-property: transform, opacity;
+  transition-duration: var(--duration-default);
+  transition-timing-function: var(--ease-out-expo);
+}
+
+.transition-slow {
+  transition-property: all;
+  transition-duration: var(--duration-slow);
+  transition-timing-function: var(--ease-out-expo);
+}
+
+.transition-slower {
+  transition-property: all;
+  transition-duration: var(--duration-slower);
+  transition-timing-function: var(--ease-out-expo);
+}
+
+
+/* ==========================================================================
+   7. KEYFRAME ANIMATIONS
+   ========================================================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes stagger {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes reveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes revealDown {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes marquee-left {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes marquee-right {
+  from {
+    transform: translate3d(-50%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* ── Animation utility classes ── */
+
+.animate-fade-in {
+  animation: fadeIn 0.6s var(--ease-default) forwards;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s var(--ease-out-expo) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.7s var(--ease-out-expo) forwards;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.5s var(--ease-out-expo) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.6s var(--ease-out-expo) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.6s var(--ease-out-expo) forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.5s var(--ease-out-expo) forwards;
+}
+
+.animate-reveal {
+  animation: reveal 0.8s var(--ease-out-expo) forwards;
+}
+
+.animate-reveal-down {
+  animation: revealDown 0.8s var(--ease-out-expo) forwards;
+}
+
+/* ── Stagger delay utilities ──
+   Usage: class="animate-stagger stagger-1" through stagger-12
+*/
+
+.animate-stagger {
+  opacity: 0;
+  animation: stagger 0.5s var(--ease-out-expo) forwards;
+}
+
+.stagger-1  { animation-delay: 0.05s; }
+.stagger-2  { animation-delay: 0.1s; }
+.stagger-3  { animation-delay: 0.15s; }
+.stagger-4  { animation-delay: 0.2s; }
+.stagger-5  { animation-delay: 0.25s; }
+.stagger-6  { animation-delay: 0.3s; }
+.stagger-7  { animation-delay: 0.35s; }
+.stagger-8  { animation-delay: 0.4s; }
+.stagger-9  { animation-delay: 0.45s; }
+.stagger-10 { animation-delay: 0.5s; }
+.stagger-11 { animation-delay: 0.55s; }
+.stagger-12 { animation-delay: 0.6s; }
+
+
+/* ==========================================================================
+   8. SELECTION & FOCUS
+   ========================================================================== */
+
+::selection {
+  background: rgba(0, 150, 46, 0.25);
+  color: var(--foreground);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-tight);
+}
+
+
+/* ==========================================================================
+   9. SCROLLBAR
+   ========================================================================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 150, 46, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 150, 46, 0.35);
+}
+
+@supports (scrollbar-color: auto) {
+  * {
+    scrollbar-color: rgba(0, 150, 46, 0.2) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+
+/* ==========================================================================
+   10. OPACITY UTILITY VARIANTS
+   ==========================================================================
+   Tailwind v4 supports slash-opacity on @theme colors (bg-accent/10).
+   These manual classes exist for custom CSS outside of Tailwind utilities.
+*/
+
+.bg-accent-5   { background: rgba(0, 150, 46, 0.05); }
+.bg-accent-10  { background: rgba(0, 150, 46, 0.10); }
+.bg-accent-15  { background: rgba(0, 150, 46, 0.15); }
+.bg-accent-20  { background: rgba(0, 150, 46, 0.20); }
+
+.text-accent-60  { color: rgba(0, 150, 46, 0.60); }
+.text-accent-80  { color: rgba(0, 150, 46, 0.80); }
+
+.border-accent-10 { border-color: rgba(0, 150, 46, 0.10); }
+.border-accent-20 { border-color: rgba(0, 150, 46, 0.20); }
+
+
+/* ==========================================================================
+   11. VIEW TRANSITIONS
+   ========================================================================== */
+
+:root {
+  --view-transition-easing: cubic-bezier(0.5, 0.3, 0, 1);
+  --view-transition-duration: 0.45s;
+}
+
+::view-transition-group(*) {
+  animation-duration: var(--view-transition-duration);
+  animation-timing-function: var(--view-transition-easing);
+}
+
+::view-transition-image-pair(root) {
+  background: #000;
+}
+
+::view-transition-old(root) {
+  animation: var(--view-transition-duration) oldPage var(--view-transition-easing);
+}
+
+::view-transition-new(root) {
+  animation: var(--view-transition-duration) newPage var(--view-transition-easing);
+}
+
+@keyframes oldPage {
+  0% {
+    clip-path: xywh(0 0 100% 100% round 0);
+    transform: scale(1);
+  }
+  100% {
+    clip-path: xywh(0 0 100% 100% round 1rem);
+    transform: scale(0.95);
+  }
+}
+
+@keyframes newPage {
+  0% {
+    clip-path: xywh(0 50% 100% 100% round 1.5rem);
+    transform: translateY(50%);
+  }
+  100% {
+    clip-path: xywh(0 0 100% 100% round 0);
+    transform: translate(0);
+  }
+}
+
+
+/* ==========================================================================
+   12. SCROLL HINT
+   ========================================================================== */
+
+@keyframes scrollHint {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+}
+
+.animate-scroll-hint {
+  animation: scrollHint 2.4s var(--ease-in-out-expo) infinite;
+}
+
+.scroll-hint-link {
+  transition: filter 0.35s var(--ease-out-expo),
+              color 0.25s var(--ease-default);
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.45));
+}
+
+.scroll-hint-link:hover {
+  filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.75));
+}
+
+/* ==========================================================================
+   PROPOSAL: light cover theme
+   ==========================================================================
+   Inverts the dark-on-white defaults baked into the proposal renderer's
+   hardcoded Tailwind classes. Scoped strictly to subtrees marked
+   data-cover-theme="light"; all other surfaces remain unchanged.
+   The primary brand-green accent is darkened under light theme so accent
+   UI reads as a deeper ink suited to white covers.
+   ========================================================================== */
+[data-cover-theme="light"] {
+  --brand-green-light: var(--brand-green-dark);
+  --color-brand-green-light: var(--brand-green-dark);
+}
+[data-cover-theme="light"] .text-white { color: #0a0a0a !important; }
+/* Keep text white when it sits on a brand-green chip (section labels, pills) */
+[data-cover-theme="light"] .text-white.bg-brand-green-light,
+[data-cover-theme="light"] .bg-brand-green-light .text-white { color: #ffffff !important; }
+/* Invert the WorkPlayer chevron buttons under light theme: white pill, dark arrow + border */
+[data-cover-theme="light"] .bg-black\/80 { background-color: #ffffff !important; }
+[data-cover-theme="light"] .hover\:bg-black:hover { background-color: #f4f4f4 !important; }
+[data-cover-theme="light"] .active\:bg-black\/95:active { background-color: #ebebeb !important; }
+[data-cover-theme="light"] .border-white\/15 { border-color: rgb(10 10 10 / 0.2) !important; }
+[data-cover-theme="light"] .text-white\/80 { color: rgb(10 10 10 / 0.8) !important; }
+[data-cover-theme="light"] .text-white\/70 { color: rgb(10 10 10 / 0.7) !important; }
+[data-cover-theme="light"] .text-white\/60 { color: rgb(10 10 10 / 0.6) !important; }
+[data-cover-theme="light"] .text-white\/50 { color: rgb(10 10 10 / 0.5) !important; }
+[data-cover-theme="light"] .text-white\/40 { color: rgb(10 10 10 / 0.4) !important; }
+[data-cover-theme="light"] .text-white\/30 { color: rgb(10 10 10 / 0.65) !important; }
+[data-cover-theme="light"] .text-white\/20 { color: rgb(10 10 10 / 0.55) !important; }
+[data-cover-theme="light"] .border-white\/10 { border-color: rgb(10 10 10 / 0.1) !important; }
+[data-cover-theme="light"] .border-white\/20 { border-color: rgb(10 10 10 / 0.2) !important; }
+[data-cover-theme="light"] .border-white\/40 { border-color: rgb(10 10 10 / 0.4) !important; }
+[data-cover-theme="light"] .bg-white { background-color: #0a0a0a !important; }
+[data-cover-theme="light"] .bg-white\/40 { background-color: rgb(10 10 10 / 0.4) !important; }
+[data-cover-theme="light"] .bg-white\/\[0\.03\] { background-color: rgb(10 10 10 / 0.03) !important; }
+[data-cover-theme="light"] .bg-white\/\[0\.02\] { background-color: rgb(10 10 10 / 0.02) !important; }
+
+
+/* ==========================================================================
+   DECK SHELL UTILITIES: scoped helpers used by the deck chrome
+   ========================================================================== */
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+@keyframes deckPillIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-pill {
+  animation: deckPillIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}

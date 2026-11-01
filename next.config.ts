@@ -1,0 +1,28 @@
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  // Inlined at build, so every build gets a new one. /api/deck-version serves it
+  // and open decks reload when it changes.
+  env: {
+    DECK_BUILD_ID: String(Date.now()),
+  },
+  // AVIF first (better compression), WebP fallback. next/image negotiates
+  // via Accept headers.
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;
