@@ -11,7 +11,7 @@
 **What's different.**
 
 - One link, two views, and nobody has to pick. Laptops land on the deck, phones land on the scroll, and a toggle flips between them.
-- The tab you're sharing on a call updates itself, without a reload. An update shows up about 22 seconds after you push, right where the viewer is, and the only thing that changes on screen is your edit. Slide words, brand values and styles all swap in place.
+- The tab you're sharing on a call updates itself, without a reload. An update shows up about 22 seconds after you push, right where the viewer is, and the only thing that changes on screen is your edit. Slide words, brand values, styles and removed slides all swap in place.
 - There's one exception. A push that changes code running in the browser does load the page again. It waits until nobody's in the booking modal or watching a video with the sound on, and it keeps your place.
 - It has manners. Someone mid-booking keeps their open modal, a reader keeps their scroll position, and a failed check mid-deploy does nothing.
 - There's an optional lock. Set `DECK_PASSCODE` and nothing of your deck leaves the server until someone enters the code.
