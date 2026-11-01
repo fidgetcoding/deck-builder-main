@@ -146,7 +146,6 @@
   --color-destructive-foreground:var(--destructive-foreground);
 
   --color-brand-green-light:     var(--brand-green-light);
-  --color-brand-green-dark:      var(--brand-green-dark);
 
   /* ── Typography ── */
   --font-sans: var(--font-outfit), sans-serif;
