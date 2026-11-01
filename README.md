@@ -81,7 +81,7 @@ git push
 
 Vercel builds it, and the update lands on every open tab without a reload, right where the viewer is. Nobody has to refresh anything.
 
-I timed this on the live demo: 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes, with one of them sitting on an open booking modal. From `git push` to the edit on screen took 18 to 28 seconds, with a median of 22, and most of that is Vercel building. None of the 18 tabs reloaded, and the modal stayed open. So it's "give me half a minute," and a bigger deck will take longer.
+I timed this on the live demo: 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes, with one of them sitting on an open booking modal. From `git push` to the edit on screen took 19 to 32 seconds, with a median of 23, and most of that is Vercel building. None of the 18 tabs reloaded, and the modal stayed open. So it's "give me half a minute," and a bigger deck will take longer.
 
 An edit to your words, slides, brand values or styles swaps in where the viewer already is. The page doesn't load again, so they keep their slide and scroll position, and an open booking modal or half-typed text stays exactly as it was.
 
@@ -98,6 +98,8 @@ The one exception is a push that changes code running in the browser, like an in
 - **A booking modal.** Your scheduling link opens inside the deck, so nobody has to leave it.
 - **Shareable spots.** The current slide and view live in the URL.
 - **Stays out of search.** `robots.txt` and `noindex` tags ask search engines and AI crawlers to leave it alone.
+- **Works from the keyboard.** Every control is reachable and visible when focused, the booking modal holds focus, slide changes are announced to screen readers, and reduced-motion settings turn the fades off.
+- **Copes with bad connections.** The link paints straight away on a slow connection and is readable with no JavaScript at all. Open tabs ride out a dropped connection and catch up when it's back.
 
 ## Good to know
 
@@ -109,7 +111,7 @@ The one exception is a push that changes code running in the browser, like an in
 - **Polling:** each open tab makes one tiny request every 3 seconds. The CDN answers it from a file made at build time, so it doesn't wake a function, but it still counts as a request: about 29,000 a day for a tab left open and visible all day. To change the pace, edit `POLL_MS` in `src/components/DeckUpdateWatcher.tsx`.
 - **Types aren't checked on Vercel:** the typecheck is the one slow build step I could cut, so Vercel skips it and CI runs it on every push. A push with a type error can still go live, so watch CI if you're changing code rather than copy.
 - **Vercel Skew Protection:** it's on by default for new projects on Vercel's Pro plan, and all my timings ran with it on. It would normally tie a tab's refreshes to the deployment it loaded from, so for a content swap the deck deliberately asks for the newest one.
-- **What I haven't tried:** real phones and Safari itself. The tests use Playwright's browser engines.
+- **What I haven't tried:** real phones, Safari itself, and a real screen reader. The tests use Playwright's browser engines and an automated accessibility scan, which can't tell you how it actually sounds.
 
 ## Tests
 
