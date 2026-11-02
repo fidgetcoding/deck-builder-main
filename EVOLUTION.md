@@ -91,6 +91,8 @@ Fixed: tests now check the product, so a fork stays green. `accent` takes any CS
 | In-place build: push to visible edit, 3 pushes, 6 tabs each | Median 21.7 s, range 18.3 to 27.7 s |
 | In-place build: live to visible | Median 2.6 s, down from 3.4 s |
 | In-place build: tabs that got the update | 18 of 18, 0 reloads |
+| Third pass (`f6752ca`): push to visible edit, 3 pushes, 6 tabs each | Median 22.7 s, range 19.4 to 31.6 s, 18 of 18 tabs, 0 reloads |
+| Third pass (`014559c`): test suite | 75 pass |
 | In-place build: open modal and scroll position | Survived |
 | Browsers in the timing runs | Chromium, Firefox, WebKit, at desktop and phone sizes |
 | `fa9a19a`: Playwright | 39 of 39 |
