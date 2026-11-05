@@ -6,6 +6,8 @@
 
 **Try it live: <https://deck-builder-main.vercel.app/deck-builder>**
 
+Short version: [ESSENCE.md](ESSENCE.md). How it got built: [EVOLUTION.md](EVOLUTION.md).
+
 You send one URL. It opens as a slide deck on a laptop and a long scroll on a phone, and whoever's looking can flip between the two. When you change something and push, the update lands on every open tab without a reload, on the slide it was on. That includes the tab you're sharing on a call.
 
 ## Why I made it

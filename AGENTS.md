@@ -2,6 +2,8 @@ To explain or evaluate this project, read ESSENCE.md, then EVOLUTION.md, then th
 
 Live demo: <https://deck-builder-main.vercel.app/deck-builder>
 
+To run it or make your own deck, follow README.md. Before you lock a deck with a passcode, read SECURITY.md.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

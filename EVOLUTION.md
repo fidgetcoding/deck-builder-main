@@ -2,7 +2,7 @@
 
 ## Short version
 
-A deck should be a link, and the link should be able to change while people are looking at it. That's the whole idea. This repo started with fresh history on 2026-11-01, so what's here is the product's story from that day on, commit by commit. I built those rounds with Claude Code. The first public version checked for updates every 15 seconds, flashed when one landed, cut off long slides on a phone and printed one slide at a time. Then I timed it on a real deploy, which turned up a bug the tests couldn't see. The last round got me what I wanted: by the end of the day an update landed on open tabs without a reload, about 22 seconds after a push, right where the viewer was. The one exception is a push that changes code running in the browser, which still loads the page again. Then I forked it fresh and rewrote every word, to find what a stranger would trip over.
+A deck should be a link, and the link should be able to change while people are looking at it. That's the whole idea. This repo started with fresh history on 2026-11-01, so what's here is the product's story from that day on, commit by commit. I built those rounds with Claude Code. The first public version checked for updates every 15 seconds, flashed when one landed, cut off long slides on a phone and printed one slide at a time. Then I timed it on a real deploy, which turned up a bug the tests couldn't see. The last round got me what I wanted: by the end of the day an update landed on open tabs without a reload, about 22 seconds after a push, right where the viewer was. The one exception is a push that changes code running in the browser, which still loads the page again. Then I forked it fresh and rewrote every word, to find what a stranger would trip over. The last pass that night taught it to ride out a bad connection and to work from the keyboard.
 
 ## Origin, in my words
 
@@ -38,6 +38,11 @@ Every date is 2026-11-01. Times are Gulf Standard Time.
 | 18:12 | `fa9a19a` | README gets the measured in-place time |
 | 18:38 | `3098732` | Fixes for what a fresh fork trips over |
 | 18:41 | `f632e7c` | Leftover dark accent token removed |
+| 20:09 | `a0e1d23` | Rides out bad networks, works from the keyboard, paints without waiting for JavaScript |
+| 20:22 | `01fd1fb` | A tab stops waiting on a refresh that already came back stale |
+| 20:29 | `f6752ca` | The reduced motion test waits for the slide to settle |
+| 20:39 | `47cf589` | Timed on the hardened watcher, with `f3a93dc` |
+| 20:46 | `014559c` | README gets the new timing and the keyboard and network behavior |
 
 ## Round by round
 
@@ -80,6 +85,12 @@ Broke, all of it stuff a stranger would have hit:
 - The PDF export printed the lock screen and reported success.
 - Open tabs sat stale when the lock changed.
 Fixed: tests now check the product, so a fork stays green. `accent` takes any CSS color and reaches everything. An empty `bookingUrl` means Contact emails you. Empty sections really don't render, including Letter and Capabilities. Labels live in `brands.ts` under `sectionTitles`. `pdf:export` on a locked deck needs the passcode and fails without one. Turning the lock on or changing the code sends open tabs to the form, and they come back to the same slide.
+
+**Round 6: bad networks and the keyboard (`a0e1d23`).**
+Built: a version check that never answers can't freeze a tab anymore, a slow swap gets time to land, and a dropped connection waits instead of landing on an error page. The link paints straight away and reads with no JavaScript at all. Hidden controls leave the tab order, the arrows and menus work from the keyboard, the booking modal holds focus, slide changes get announced to screen readers, and reduced motion turns the fades off. `SECURITY.md` now says plainly that passcode guesses aren't rate limited.
+Tested: a new `tests/resilience.spec.ts` for the network and keyboard cases, plus new lock tests. The suite went to 75, all passing in CI. Then real pushes to the live demo again (`47cf589`, `f3a93dc`), and the sample copy put back (`23ef200`).
+Broke: a tab could sit waiting on a refresh that had already come back stale, and the reduced motion test checked before the slide had settled.
+Fixed: `01fd1fb`, `f6752ca`. The timed runs on the hardened watcher came in at a median of 22.7 s, 18 of 18 tabs updated, and none reloaded.
 
 ## Test log
 

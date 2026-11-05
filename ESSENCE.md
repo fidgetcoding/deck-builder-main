@@ -32,6 +32,6 @@ Open <http://localhost:3000/deck-builder>. To see updates land for real, put it 
 **What works today.** You can check all of this from the repo and the live demo:
 
 - Push to visible edit on the live demo: median 22.7 seconds, range 19.4 to 31.6. 3 pushes, 6 tabs open each time, across Chromium, Firefox and WebKit at desktop and phone sizes. All 18 tabs got the update and none of them reloaded. An open modal and scroll position survived. Most of that time is Vercel building.
-- 49 of 49 Playwright tests pass in CI, along with lint and the build. On a fresh fork with every word rewritten, 46 pass and 3 skip, the modal tests that need a booking link. They cover both views, updates landing in place, the passcode, phone layouts and printing.
+- 75 of 75 Playwright tests pass in CI, along with lint, the typecheck and the build. They cover both views, updates landing in place, the passcode, phone layouts, printing, bad connections and the keyboard. Back when the suite had 49, a fresh fork with every word rewritten passed 46 and skipped 3, the modal tests that need a booking link.
 - Long slides scroll inside themselves on a phone.
 - The deck view prints every slide. The 12 starter slides make a 12-page PDF.
