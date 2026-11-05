@@ -4,7 +4,7 @@
 
 **Please don't open a public GitHub issue for security vulnerabilities.**
 
-Report it privately through GitHub instead: the repo's **Security** tab → **Report a vulnerability**, or go straight to <https://github.com/fidgetcoding/deck-builder-main/security/advisories/new>. Only the maintainer sees the report. Include:
+Email **nate@lorecraft.io**, or use GitHub's private reporting: the repo's **Security** tab → **Report a vulnerability**, also at <https://github.com/fidgetcoding/deck-builder-main/security/advisories/new>. Either way, include:
 
 - What's wrong
 - How to reproduce it
